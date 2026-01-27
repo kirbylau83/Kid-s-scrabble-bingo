@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Scavenger Scrabble: 7-Tile Edition</title>
+    <title>Scavenger Scrabble: Connected Edition</title>
     <style>
         :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
         body { font-family: 'Comic Sans MS', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
@@ -15,10 +15,13 @@
         
         .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; border-radius: 8px; }
         .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.2rem; }
+        
+        /* Special Squares */
+        .start-square { background: #fee2e2 !important; border: 2px solid #ef4444 !important; }
         .icon-square::after { content: attr(data-icon); position: absolute; font-size: 14px; bottom: 0; right: 0; opacity: 0.6; }
 
         .bingo-grid { display: grid; grid-template-columns: repeat(4, 60px); gap: 5px; background: #cbd5e1; padding: 10px; border-radius: 10px; }
-        .bingo-cell { width: 60px; height: 60px; background: white; font-size: 30px; display: flex; align-items: center; justify-content: center; transition: 0.3s; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); }
+        .bingo-cell { width: 60px; height: 60px; background: white; font-size: 30px; display: flex; align-items: center; justify-content: center; transition: 0.3s; border-radius: 8px; }
         .marked { background: #4ade80 !important; transform: scale(1.05); box-shadow: 0 0 15px #4ade80; }
 
         .rack-container { margin: 20px; padding: 15px; background: #e2e8f0; border-radius: 10px; width: 600px; text-align: center; border: 2px dashed #94a3b8; }
@@ -26,21 +29,20 @@
         .tile.selected { background: #fbbf24; transform: translateY(-8px); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
         
         .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
-        button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; color: white; transition: 0.2s; }
+        button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; }
         .btn-finish { background: #059669; }
         .btn-recall { background: #64748b; }
         .btn-pass { background: #f59e0b; }
         
+        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 100; }
         .hidden { display: none; }
-        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 100; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="win-overlay">
         <h1 id="winner-text">PLAYER 1 WINS!</h1>
-        <p style="font-size: 1.5rem;">🎉 BINGO! 🎉</p>
-        <button onclick="location.reload()" style="background:#059669; margin-top:20px; padding: 15px 30px;">Play Again</button>
+        <button onclick="location.reload()" style="background:#059669; padding: 15px 30px;">Play Again</button>
     </div>
 
     <div id="turn-indicator" class="game-header p1-turn">
@@ -50,22 +52,16 @@
     <div class="main-layout">
         <div id="board" class="board"></div>
         <div class="bingo-area">
-            <div id="p1-bingo-zone">
-                <h3 style="color:var(--p1-color)">Player 1's Bingo</h3>
-                <div id="p1-bingo" class="bingo-grid"></div>
-            </div>
-            <div id="p2-bingo-zone" class="hidden">
-                <h3 style="color:var(--p2-color)">Player 2's Bingo</h3>
-                <div id="p2-bingo" class="bingo-grid"></div>
-            </div>
+            <div id="p1-bingo-zone"><h3>P1 Bingo</h3><div id="p1-bingo" class="bingo-grid"></div></div>
+            <div id="p2-bingo-zone" class="hidden"><h3>P2 Bingo</h3><div id="p2-bingo" class="bingo-grid"></div></div>
         </div>
     </div>
 
     <div class="rack-container">
         <div id="current-rack"></div>
         <div class="btn-group">
-            <button class="btn-recall" onclick="recallTiles()">Recall Tiles</button>
-            <button class="btn-pass" onclick="passTurn()">Pass (Get New 7)</button>
+            <button class="btn-recall" onclick="recallTiles()">Recall</button>
+            <button class="btn-pass" onclick="passTurn()">Pass Turn</button>
             <button class="btn-finish" onclick="finishTurn()">Finish Turn</button>
         </div>
     </div>
@@ -75,6 +71,7 @@
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const vowels = "AEIOU";
     let currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
+    let boardIsFresh = true;
     let gameState = { p1: { rack: [], bingo: [] }, p2: { rack: [], bingo: [] } };
 
     function init() {
@@ -87,35 +84,24 @@
         renderBingo(1); renderBingo(2); renderRack();
     }
 
-    // Ensures 7 tiles with at least 2 vowels
     function generateBalancedHand(existingRack = []) {
         let rack = [...existingRack];
-        
-        // Fill up to 7
-        while(rack.length < 7) {
-            rack.push(alphabet[Math.floor(Math.random() * 26)]);
-        }
-
-        // Count vowels
-        let vowelCount = rack.filter(l => vowels.includes(l)).length;
-
-        // Force at least 2 vowels
-        while(vowelCount < 2) {
-            // Find a non-vowel to replace
-            let nonVowelIndex = rack.findIndex(l => !vowels.includes(l));
-            if(nonVowelIndex !== -1) {
-                rack[nonVowelIndex] = vowels[Math.floor(Math.random() * 5)];
-                vowelCount++;
-            } else {
-                break; // Should never happen if rack has 7 letters
-            }
+        while(rack.length < 7) rack.push(alphabet[Math.floor(Math.random() * 26)]);
+        let vCount = rack.filter(l => vowels.includes(l)).length;
+        while(vCount < 2) {
+            let nvIdx = rack.findIndex(l => !vowels.includes(l));
+            if(nvIdx !== -1) { rack[nvIdx] = vowels[Math.floor(Math.random() * 5)]; vCount++; }
+            else break;
         }
         return rack;
     }
 
     function generateIconMap() {
         let spots = new Set();
-        while(spots.size < 30) spots.add(Math.floor(Math.random() * 225));
+        while(spots.size < 30) {
+            let s = Math.floor(Math.random() * 225);
+            if(s !== 112) spots.add(s); // Don't put icon on center
+        }
         spots.forEach(s => iconMap[`${Math.floor(s/15)}-${s%15}`] = icons[Math.floor(Math.random()*9)]);
     }
 
@@ -125,7 +111,11 @@
             for(let c=0; c<15; c++) {
                 const cell = document.createElement('div');
                 cell.className = 'board-cell';
-                if(iconMap[`${r}-${c}`]) { cell.classList.add('icon-square'); cell.setAttribute('data-icon', iconMap[`${r}-${c}`]); }
+                if(r === 7 && c === 7) cell.classList.add('start-square');
+                if(iconMap[`${r}-${c}`]) {
+                    cell.classList.add('icon-square');
+                    cell.setAttribute('data-icon', iconMap[`${r}-${c}`]);
+                }
                 cell.onclick = () => placeTile(r, c);
                 cell.id = `cell-${r}-${c}`;
                 board.appendChild(cell);
@@ -148,7 +138,8 @@
     function placeTile(r, c) {
         if(!gameActive) return;
         const cell = document.getElementById(`cell-${r}-${c}`);
-        if (selectedTileIndex !== null && cell.innerText === "") {
+        // Only allow placing on empty squares or squares where we JUST placed something
+        if (selectedTileIndex !== null && cell.style.color !== "black" && cell.innerText === "") {
             const letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
             cell.innerText = letter;
             cell.style.color = "#2563eb"; 
@@ -160,7 +151,6 @@
     }
 
     function recallTiles() {
-        if(!gameActive || newTilesThisTurn.length === 0) return;
         newTilesThisTurn.forEach(tile => {
             document.getElementById(`cell-${tile.r}-${tile.c}`).innerText = "";
             gameState[`p${currentPlayer}`].rack.push(tile.letter);
@@ -171,18 +161,37 @@
     }
 
     function passTurn() {
-        if(!gameActive) return;
-        if(confirm("Pass turn? You will get 7 brand new letters.")) {
+        if(confirm("Pass? Get 7 new tiles.")) {
             recallTiles();
-            gameState[`p${currentPlayer}`].rack = generateBalancedHand([]); // Empty current hand and refresh
+            gameState[`p${currentPlayer}`].rack = generateBalancedHand([]);
             switchTurn();
         }
     }
 
     async function finishTurn() {
-        if(!gameActive || newTilesThisTurn.length === 0) return;
+        if(newTilesThisTurn.length === 0) return;
+        
+        // 1. Connectivity Check
+        let touchesCenter = newTilesThisTurn.some(t => t.r === 7 && t.c === 7);
+        let touchesExisting = newTilesThisTurn.some(t => {
+            const neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
+            return neighbors.some(([dr, dc]) => {
+                let cell = document.getElementById(`cell-${t.r + dr}-${t.c + dc}`);
+                return cell && cell.style.color === "black";
+            });
+        });
+
+        if (boardIsFresh && !touchesCenter) {
+            alert("The first word must touch the red center square!");
+            return;
+        }
+        if (!boardIsFresh && !touchesExisting) {
+            alert("New words must connect to words already on the board!");
+            return;
+        }
+
         const word = scanForWord();
-        if (!word) { alert("Tiles must be in a straight line!"); return; }
+        if (!word) { alert("Straight lines only!"); return; }
 
         const isValid = await verifyWithAPI(word);
         if (isValid) {
@@ -192,7 +201,7 @@
                 document.getElementById(`cell-${tile.r}-${tile.c}`).style.color = "black";
             });
             newTilesThisTurn = [];
-            // Replenish remaining tiles back up to 7 with the Vowel Guard
+            boardIsFresh = false;
             gameState[`p${currentPlayer}`].rack = generateBalancedHand(gameState[`p${currentPlayer}`].rack);
             switchTurn();
         } else {
@@ -246,10 +255,7 @@
         for(let i=0; i<16; i++) grid.push(document.getElementById(`p${p}-bingo-${i}`).classList.contains('marked'));
         for(let i=0; i<4; i++) {
             let rW=true, cW=true;
-            for(let j=0; j<4; j++) {
-                if(!grid[i*4+j]) rW=false;
-                if(!grid[j*4+i]) cW=false;
-            }
+            for(let j=0; j<4; j++) { if(!grid[i*4+j]) rW=false; if(!grid[j*4+i]) cW=false; }
             if(rW || cW) { gameActive = false; document.getElementById('win-overlay').style.display='flex'; }
         }
     }

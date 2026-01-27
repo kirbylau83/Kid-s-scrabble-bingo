@@ -1,61 +1,171 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scavenger Scrabble Pro</title>
     <style>
-        body { font-family: 'Comic Sans MS', sans-serif; text-align: center; background: #f0f9ff; }
-        .bingo-grid { display: grid; grid-template-columns: repeat(3, 100px); gap: 10px; justify-content: center; margin: 20px; }
-        .cell { width: 100px; height: 100px; border: 3px solid #333; border-radius: 15px; display: flex; align-items: center; 
-                justify-content: center; font-size: 40px; background: white; transition: 0.3s; }
-        .found { background: #bbf7d0; transform: scale(1.1); border-color: #22c55e; }
-        input { padding: 10px; font-size: 20px; border-radius: 10px; border: 2px solid #cbd5e1; }
-        button { padding: 10px 20px; font-size: 20px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 10px; }
+        :root { --cell-size: 40px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        
+        /* Layout Layout */
+        .game-container { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
+        
+        /* Scrabble Board */
+        .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #8b5e3c; padding: 5px; border-radius: 8px; border: 4px solid #5d3a24; }
+        .board-cell { width: var(--cell-size); height: var(--cell-size); background: #fff9db; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; cursor: pointer; position: relative; }
+        .icon-square { background: #e0f2fe; } /* Blue tint for icon squares */
+        .icon-overlay { font-size: 0.8rem; position: absolute; bottom: 1px; right: 1px; opacity: 0.6; }
+
+        /* Bingo Card */
+        .bingo-section { text-align: center; }
+        .bingo-grid { display: grid; grid-template-columns: repeat(9, 35px); gap: 4px; background: #334155; padding: 10px; border-radius: 10px; }
+        .bingo-cell { width: 35px; height: 35px; background: white; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.3s; }
+        .bingo-marked { background: #4ade80; transform: scale(1.1); box-shadow: 0 0 10px #4ade80; }
+
+        /* Controls */
+        .controls { margin-top: 20px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); width: 100%; max-width: 600px; text-align: center; }
+        #tile-rack { margin: 10px 0; font-size: 1.5rem; letter-spacing: 10px; color: #1e40af; font-weight: bold; }
+        input { padding: 8px; width: 200px; border-radius: 5px; border: 1px solid #ccc; }
+        button { padding: 8px 16px; cursor: pointer; background: #16a34a; color: white; border: none; border-radius: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>🎒 Word Scavenger Bingo</h1>
-    <p>Type the word you played to mark your card!</p>
-    
-    <div class="bingo-grid" id="card"></div>
-    
-    <input type="text" id="wordInput" placeholder="Enter word...">
-    <button onclick="checkWord()">Check Word!</button>
 
-    <script>
-        const iconMap = {
-            'A':'🎨','E':'🎨','I':'🎨','O':'🎨','U':'🎨', // Vowels
-            'B':'🚀','C':'🚀','D':'🚀','F':'🚀','G':'🚀', // Starters
-            'H':'🦁','L':'🦁','M':'🦁','N':'🦁','R':'🦁', // Animals
-            'P':'🍕','S':'🍕','T':'🍕','W':'🍕','Y':'🍕', // Snacks
-            'Q':'💎','X':'💎','J':'💎','K':'💎','V':'💎','Z':'💎' // Gems
-        };
+    <h1>🏆 Scavenger Scrabble</h1>
 
-        const icons = ['🎨', '🚀', '🦁', '🍕', '💎'];
-        let playerCard = [];
+    <div class="game-container">
+        <div>
+            <h3>Game Board</h3>
+            <div id="board" class="board"></div>
+        </div>
 
-        // Generate Random 3x3 Card
-        function initGame() {
-            const grid = document.getElementById('card');
-            for(let i=0; i<9; i++) {
-                const randIcon = icons[Math.floor(Math.random() * icons.length)];
-                playerCard.push(randIcon);
-                grid.innerHTML += `<div class="cell" id="cell-${i}">${randIcon}</div>`;
+        <div class="bingo-section">
+            <h3>Your Bingo Card (9x9)</h3>
+            <div id="bingo-card" class="bingo-grid"></div>
+            <p><small>Match icons to win!</small></p>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div id="tile-rack">Your Tiles: LOADING...</div>
+        <input type="text" id="wordInput" placeholder="Enter word to play...">
+        <button onclick="playWord()">Play Word</button>
+        <p><small>Words can go Up, Down, Left, or Right!</small></p>
+    </div>
+
+<script>
+    const icons = ['🍎', '🚀', '🦁', '🍕', '💎', '🌈', '🎸', '🍦', '🎈'];
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let playerTiles = [];
+    let boardState = Array(15).fill(null).map(() => Array(15).fill(null));
+    let iconLocations = {}; // Stores { 'row-col': icon }
+
+    // 1. Initialize Game
+    function init() {
+        createBoard();
+        createBingoCard();
+        drawTiles();
+    }
+
+    // 2. Create 15x15 Board with 30 Random Icons
+    function createBoard() {
+        const boardEl = document.getElementById('board');
+        let placedIcons = 0;
+        
+        // Pick 30 random spots for icons
+        let iconPositions = new Set();
+        while(iconPositions.size < 30) {
+            iconPositions.add(Math.floor(Math.random() * 225));
+        }
+
+        for (let i = 0; i < 225; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'board-cell';
+            const r = Math.floor(i / 15);
+            const c = i % 15;
+            cell.id = `cell-${r}-${c}`;
+
+            if (iconPositions.has(i)) {
+                const randomIcon = icons[Math.floor(Math.random() * icons.length)];
+                iconLocations[`${r}-${c}`] = randomIcon;
+                cell.classList.add('icon-square');
+                cell.innerHTML = `<span class="icon-overlay">${randomIcon}</span>`;
             }
+            boardEl.appendChild(cell);
         }
+    }
 
-        function checkWord() {
-            const word = document.getElementById('wordInput').value.toUpperCase();
-            [...word].forEach(letter => {
-                const icon = iconMap[letter];
-                playerCard.forEach((cardIcon, index) => {
-                    if(cardIcon === icon) {
-                        document.getElementById(`cell-${index}`).classList.add('found');
-                    }
-                });
-            });
-            document.getElementById('wordInput').value = '';
+    // 3. Create 9x9 Bingo Card
+    function createBingoCard() {
+        const bingoEl = document.getElementById('bingo-card');
+        for (let i = 0; i < 81; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'bingo-cell';
+            const icon = icons[Math.floor(Math.random() * icons.length)];
+            cell.dataset.icon = icon;
+            cell.innerText = icon;
+            cell.id = `bingo-${i}`;
+            bingoEl.appendChild(cell);
         }
+    }
 
-        initGame();
-    </script>
+    // 4. Draw 10 Initial Letters
+    function drawTiles() {
+        playerTiles = [];
+        for(let i=0; i<10; i++) {
+            playerTiles.push(alphabet[Math.floor(Math.random() * 26)]);
+        }
+        updateRack();
+    }
+
+    function updateRack() {
+        document.getElementById('tile-rack').innerText = "Your Tiles: " + playerTiles.join(' ');
+    }
+
+    // 5. Play Word Logic (Simulated Placement)
+    function playWord() {
+        const word = document.getElementById('wordInput').value.toUpperCase();
+        if(!word) return;
+
+        // For this simple version, we place words randomly on the board for the user
+        // In a full game, you'd click a cell to start placing.
+        let row = Math.floor(Math.random() * 15);
+        let col = Math.floor(Math.random() * (15 - word.length));
+
+        [...word].forEach((letter, index) => {
+            const currentCol = col + index;
+            const cell = document.getElementById(`cell-${row}-${currentCol}`);
+            cell.innerText = letter; // Overwrites the icon visual but we keep the logic
+            
+            // Check if this spot had an icon
+            const iconAtSpot = iconLocations[`${row}-${currentCol}`];
+            if(iconAtSpot) {
+                markBingo(iconAtSpot);
+            }
+        });
+
+        document.getElementById('wordInput').value = '';
+    }
+
+    // 6. Mark Bingo Card
+    function markBingo(icon) {
+        const bingoCells = document.querySelectorAll('.bingo-cell');
+        bingoCells.forEach(cell => {
+            if(cell.dataset.icon === icon) {
+                cell.classList.add('bingo-marked');
+            }
+        });
+        checkWin();
+    }
+
+    // 7. Check for Row/Col Win
+    function checkWin() {
+        // Logic for 9x9 win check would go here
+        // For now, let's just celebrate any mark!
+    }
+
+    init();
+</script>
 </body>
 </html>

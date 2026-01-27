@@ -2,30 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Scavenger Scrabble: Connected Edition</title>
+    <title>Scavenger Scrabble: Strict Connection Edition</title>
     <style>
         :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
         body { font-family: 'Comic Sans MS', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
         
-        .game-header { text-align: center; margin: 10px; padding: 10px; border-radius: 10px; width: 80%; color: white; transition: 0.3s; }
+        .game-header { text-align: center; margin: 10px; padding: 10px; border-radius: 10px; width: 80%; color: white; }
         .p1-turn { background: var(--p1-color); }
         .p2-turn { background: var(--p2-color); }
 
         .main-layout { display: flex; gap: 40px; align-items: flex-start; margin-top: 10px; }
         
         .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; border-radius: 8px; }
-        .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.2rem; }
+        .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.2rem; box-sizing: border-box; }
         
-        /* Special Squares */
-        .start-square { background: #fee2e2 !important; border: 2px solid #ef4444 !important; }
+        /* Center Square Correction */
+        .board-cell.start-square { background-color: #ff4d4d !important; border: 2px solid #b30000 !important; }
+        
         .icon-square::after { content: attr(data-icon); position: absolute; font-size: 14px; bottom: 0; right: 0; opacity: 0.6; }
 
         .bingo-grid { display: grid; grid-template-columns: repeat(4, 60px); gap: 5px; background: #cbd5e1; padding: 10px; border-radius: 10px; }
-        .bingo-cell { width: 60px; height: 60px; background: white; font-size: 30px; display: flex; align-items: center; justify-content: center; transition: 0.3s; border-radius: 8px; }
-        .marked { background: #4ade80 !important; transform: scale(1.05); box-shadow: 0 0 15px #4ade80; }
+        .bingo-cell { width: 60px; height: 60px; background: white; font-size: 30px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+        .marked { background: #4ade80 !important; box-shadow: 0 0 15px #4ade80; }
 
         .rack-container { margin: 20px; padding: 15px; background: #e2e8f0; border-radius: 10px; width: 600px; text-align: center; border: 2px dashed #94a3b8; }
-        .tile { display: inline-block; width: 45px; height: 50px; background: #fef3c7; border: 2px solid #d97706; border-radius: 5px; line-height: 50px; font-size: 28px; font-weight: bold; margin: 5px; cursor: pointer; user-select: none; transition: 0.2s; }
+        .tile { display: inline-block; width: 45px; height: 50px; background: #fef3c7; border: 2px solid #d97706; border-radius: 5px; line-height: 50px; font-size: 28px; font-weight: bold; margin: 5px; cursor: pointer; }
         .tile.selected { background: #fbbf24; transform: translateY(-8px); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
         
         .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
@@ -41,7 +42,7 @@
 <body>
 
     <div id="win-overlay">
-        <h1 id="winner-text">PLAYER 1 WINS!</h1>
+        <h1>PLAYER <span id="winner-num"></span> BINGO!</h1>
         <button onclick="location.reload()" style="background:#059669; padding: 15px 30px;">Play Again</button>
     </div>
 
@@ -100,7 +101,7 @@
         let spots = new Set();
         while(spots.size < 30) {
             let s = Math.floor(Math.random() * 225);
-            if(s !== 112) spots.add(s); // Don't put icon on center
+            if(s !== 112) spots.add(s); 
         }
         spots.forEach(s => iconMap[`${Math.floor(s/15)}-${s%15}`] = icons[Math.floor(Math.random()*9)]);
     }
@@ -138,11 +139,10 @@
     function placeTile(r, c) {
         if(!gameActive) return;
         const cell = document.getElementById(`cell-${r}-${c}`);
-        // Only allow placing on empty squares or squares where we JUST placed something
-        if (selectedTileIndex !== null && cell.style.color !== "black" && cell.innerText === "") {
+        if (selectedTileIndex !== null && cell.innerText === "") {
             const letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
             cell.innerText = letter;
-            cell.style.color = "#2563eb"; 
+            cell.style.color = "#2563eb"; // Blue color for "In Progress"
             newTilesThisTurn.push({r, c, letter});
             gameState[`p${currentPlayer}`].rack.splice(selectedTileIndex, 1);
             selectedTileIndex = null;
@@ -152,7 +152,9 @@
 
     function recallTiles() {
         newTilesThisTurn.forEach(tile => {
-            document.getElementById(`cell-${tile.r}-${tile.c}`).innerText = "";
+            const cell = document.getElementById(`cell-${tile.r}-${tile.c}`);
+            cell.innerText = "";
+            cell.style.color = "";
             gameState[`p${currentPlayer}`].rack.push(tile.letter);
         });
         newTilesThisTurn = [];
@@ -170,35 +172,38 @@
 
     async function finishTurn() {
         if(newTilesThisTurn.length === 0) return;
-        
-        // 1. Connectivity Check
-        let touchesCenter = newTilesThisTurn.some(t => t.r === 7 && t.c === 7);
-        let touchesExisting = newTilesThisTurn.some(t => {
-            const neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
-            return neighbors.some(([dr, dc]) => {
-                let cell = document.getElementById(`cell-${t.r + dr}-${t.c + dc}`);
-                return cell && cell.style.color === "black";
-            });
-        });
 
-        if (boardIsFresh && !touchesCenter) {
-            alert("The first word must touch the red center square!");
-            return;
-        }
-        if (!boardIsFresh && !touchesExisting) {
-            alert("New words must connect to words already on the board!");
-            return;
+        // CONNECTION CHECK
+        let validPlacement = false;
+        if (boardIsFresh) {
+            validPlacement = newTilesThisTurn.some(t => t.r === 7 && t.c === 7);
+            if (!validPlacement) { alert("The first word must cover the red center square!"); return; }
+        } else {
+            validPlacement = newTilesThisTurn.some(t => {
+                const neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
+                return neighbors.some(([dr, dc]) => {
+                    let nr = t.r + dr, nc = t.c + dc;
+                    if(nr>=0 && nr<15 && nc>=0 && nc<15) {
+                        let neighborCell = document.getElementById(`cell-${nr}-${nc}`);
+                        // Connection only counts if the neighbor is a "Locked" tile (black color)
+                        return neighborCell.innerText !== "" && neighborCell.style.color === "rgb(0, 0, 0)";
+                    }
+                    return false;
+                });
+            });
+            if (!validPlacement) { alert("Word must connect to an existing letter!"); return; }
         }
 
         const word = scanForWord();
-        if (!word) { alert("Straight lines only!"); return; }
+        if (!word) { alert("Tiles must be in a single straight line!"); return; }
 
         const isValid = await verifyWithAPI(word);
         if (isValid) {
             newTilesThisTurn.forEach(tile => {
                 const icon = iconMap[`${tile.r}-${tile.c}`];
                 if(icon) markBingoCard(icon);
-                document.getElementById(`cell-${tile.r}-${tile.c}`).style.color = "black";
+                // LOCK THE TILE: Change color to black
+                document.getElementById(`cell-${tile.r}-${tile.c}`).style.color = "rgb(0, 0, 0)";
             });
             newTilesThisTurn = [];
             boardIsFresh = false;
@@ -256,7 +261,11 @@
         for(let i=0; i<4; i++) {
             let rW=true, cW=true;
             for(let j=0; j<4; j++) { if(!grid[i*4+j]) rW=false; if(!grid[j*4+i]) cW=false; }
-            if(rW || cW) { gameActive = false; document.getElementById('win-overlay').style.display='flex'; }
+            if(rW || cW) { 
+                gameActive = false; 
+                document.getElementById('winner-num').innerText = currentPlayer;
+                document.getElementById('win-overlay').style.display='flex'; 
+            }
         }
     }
 

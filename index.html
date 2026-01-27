@@ -2,47 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Scavenger Scrabble: 2-Player Edition</title>
+    <title>Scavenger Scrabble: 7-Tile Edition</title>
     <style>
         :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
         body { font-family: 'Comic Sans MS', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
         
-        .game-header { text-align: center; margin: 10px; padding: 10px; border-radius: 10px; width: 80%; color: white; transition: 0.3s; z-index: 10; }
+        .game-header { text-align: center; margin: 10px; padding: 10px; border-radius: 10px; width: 80%; color: white; transition: 0.3s; }
         .p1-turn { background: var(--p1-color); }
         .p2-turn { background: var(--p2-color); }
 
-        .main-layout { display: flex; gap: 20px; align-items: flex-start; margin-top: 10px; }
+        .main-layout { display: flex; gap: 40px; align-items: flex-start; margin-top: 10px; }
         
         .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; border-radius: 8px; }
-        .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; }
-        .icon-square::after { content: attr(data-icon); position: absolute; font-size: 12px; bottom: 0; right: 0; opacity: 0.5; }
+        .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.2rem; }
+        .icon-square::after { content: attr(data-icon); position: absolute; font-size: 14px; bottom: 0; right: 0; opacity: 0.6; }
 
-        .bingo-container { text-align: center; }
-        .bingo-grid { display: grid; grid-template-columns: repeat(9, 30px); gap: 2px; background: #cbd5e1; padding: 5px; border-radius: 5px; }
-        .bingo-cell { width: 30px; height: 30px; background: white; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background 0.3s; }
-        .marked { background: #4ade80 !important; font-weight: bold; }
+        .bingo-grid { display: grid; grid-template-columns: repeat(4, 60px); gap: 5px; background: #cbd5e1; padding: 10px; border-radius: 10px; }
+        .bingo-cell { width: 60px; height: 60px; background: white; font-size: 30px; display: flex; align-items: center; justify-content: center; transition: 0.3s; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); }
+        .marked { background: #4ade80 !important; transform: scale(1.05); box-shadow: 0 0 15px #4ade80; }
 
         .rack-container { margin: 20px; padding: 15px; background: #e2e8f0; border-radius: 10px; width: 600px; text-align: center; border: 2px dashed #94a3b8; }
-        .tile { display: inline-block; width: 40px; height: 45px; background: #fef3c7; border: 2px solid #d97706; border-radius: 5px; 
-                line-height: 45px; font-size: 24px; font-weight: bold; margin: 5px; cursor: pointer; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .tile.selected { background: #fbbf24; transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.2); border-color: #92400e; }
+        .tile { display: inline-block; width: 45px; height: 50px; background: #fef3c7; border: 2px solid #d97706; border-radius: 5px; line-height: 50px; font-size: 28px; font-weight: bold; margin: 5px; cursor: pointer; user-select: none; transition: 0.2s; }
+        .tile.selected { background: #fbbf24; transform: translateY(-8px); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
+        
+        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; color: white; transition: 0.2s; }
+        .btn-finish { background: #059669; }
+        .btn-recall { background: #64748b; }
+        .btn-pass { background: #f59e0b; }
         
         .hidden { display: none; }
-        button { padding: 12px 30px; font-size: 18px; cursor: pointer; background: #059669; color: white; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
-        button:hover { background: #047857; transform: scale(1.05); }
-
-        /* Win Message Overlay */
-        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); 
-                       display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 100; }
-        #win-overlay h1 { font-size: 4rem; margin-bottom: 10px; }
+        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 100; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="win-overlay">
         <h1 id="winner-text">PLAYER 1 WINS!</h1>
-        <p>BINGO! A full row or column was completed!</p>
-        <button onclick="location.reload()">Play Again</button>
+        <p style="font-size: 1.5rem;">🎉 BINGO! 🎉</p>
+        <button onclick="location.reload()" style="background:#059669; margin-top:20px; padding: 15px 30px;">Play Again</button>
     </div>
 
     <div id="turn-indicator" class="game-header p1-turn">
@@ -51,14 +49,13 @@
 
     <div class="main-layout">
         <div id="board" class="board"></div>
-
         <div class="bingo-area">
-            <div id="p1-bingo-zone" class="bingo-container">
-                <h4>P1 Bingo Card (9x9)</h4>
+            <div id="p1-bingo-zone">
+                <h3 style="color:var(--p1-color)">Player 1's Bingo</h3>
                 <div id="p1-bingo" class="bingo-grid"></div>
             </div>
-            <div id="p2-bingo-zone" class="bingo-container hidden">
-                <h4>P2 Bingo Card (9x9)</h4>
+            <div id="p2-bingo-zone" class="hidden">
+                <h3 style="color:var(--p2-color)">Player 2's Bingo</h3>
                 <div id="p2-bingo" class="bingo-grid"></div>
             </div>
         </div>
@@ -66,43 +63,60 @@
 
     <div class="rack-container">
         <div id="current-rack"></div>
-        <br>
-        <button onclick="finishTurn()">Finish Turn (Next Player)</button>
+        <div class="btn-group">
+            <button class="btn-recall" onclick="recallTiles()">Recall Tiles</button>
+            <button class="btn-pass" onclick="passTurn()">Pass (Get New 7)</button>
+            <button class="btn-finish" onclick="finishTurn()">Finish Turn</button>
+        </div>
     </div>
 
 <script>
     const icons = ['🍎', '🚀', '🦁', '🍕', '💎', '🌈', '🎸', '🍦', '🎈'];
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let currentPlayer = 1;
-    let selectedTileIndex = null;
-    let iconMap = {}; 
-    let gameActive = true;
-
-    let gameState = {
-        p1: { rack: [], bingo: [] },
-        p2: { rack: [], bingo: [] }
-    };
+    const vowels = "AEIOU";
+    let currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
+    let gameState = { p1: { rack: [], bingo: [] }, p2: { rack: [], bingo: [] } };
 
     function init() {
         generateIconMap();
         createBoard();
-        // Setup P1 and P2 data
         for(let p of ['p1', 'p2']) {
-            gameState[p].rack = Array.from({length: 10}, () => alphabet[Math.floor(Math.random()*26)]);
-            gameState[p].bingo = Array.from({length: 81}, () => icons[Math.floor(Math.random()*9)]);
+            gameState[p].rack = generateBalancedHand();
+            gameState[p].bingo = Array.from({length: 16}, () => icons[Math.floor(Math.random()*9)]);
         }
+        renderBingo(1); renderBingo(2); renderRack();
+    }
+
+    // Ensures 7 tiles with at least 2 vowels
+    function generateBalancedHand(existingRack = []) {
+        let rack = [...existingRack];
         
-        renderBingo(1);
-        renderBingo(2);
-        renderRack();
+        // Fill up to 7
+        while(rack.length < 7) {
+            rack.push(alphabet[Math.floor(Math.random() * 26)]);
+        }
+
+        // Count vowels
+        let vowelCount = rack.filter(l => vowels.includes(l)).length;
+
+        // Force at least 2 vowels
+        while(vowelCount < 2) {
+            // Find a non-vowel to replace
+            let nonVowelIndex = rack.findIndex(l => !vowels.includes(l));
+            if(nonVowelIndex !== -1) {
+                rack[nonVowelIndex] = vowels[Math.floor(Math.random() * 5)];
+                vowelCount++;
+            } else {
+                break; // Should never happen if rack has 7 letters
+            }
+        }
+        return rack;
     }
 
     function generateIconMap() {
         let spots = new Set();
         while(spots.size < 30) spots.add(Math.floor(Math.random() * 225));
-        spots.forEach(s => {
-            iconMap[`${Math.floor(s/15)}-${s%15}`] = icons[Math.floor(Math.random()*9)];
-        });
+        spots.forEach(s => iconMap[`${Math.floor(s/15)}-${s%15}`] = icons[Math.floor(Math.random()*9)]);
     }
 
     function createBoard() {
@@ -111,10 +125,7 @@
             for(let c=0; c<15; c++) {
                 const cell = document.createElement('div');
                 cell.className = 'board-cell';
-                if(iconMap[`${r}-${c}`]) {
-                    cell.classList.add('icon-square');
-                    cell.setAttribute('data-icon', iconMap[`${r}-${c}`]);
-                }
+                if(iconMap[`${r}-${c}`]) { cell.classList.add('icon-square'); cell.setAttribute('data-icon', iconMap[`${r}-${c}`]); }
                 cell.onclick = () => placeTile(r, c);
                 cell.id = `cell-${r}-${c}`;
                 board.appendChild(cell);
@@ -122,23 +133,10 @@
         }
     }
 
-    function renderBingo(playerNum) {
-        const grid = document.getElementById(`p${playerNum}-bingo`);
-        grid.innerHTML = '';
-        gameState[`p${playerNum}`].bingo.forEach((icon, i) => {
-            const cell = document.createElement('div');
-            cell.className = 'bingo-cell';
-            cell.id = `p${playerNum}-bingo-${i}`;
-            cell.innerText = icon;
-            grid.appendChild(cell);
-        });
-    }
-
     function renderRack() {
         const rackDiv = document.getElementById('current-rack');
         rackDiv.innerHTML = '';
-        const currentRack = gameState[`p${currentPlayer}`].rack;
-        currentRack.forEach((letter, i) => {
+        gameState[`p${currentPlayer}`].rack.forEach((letter, i) => {
             const t = document.createElement('div');
             t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '');
             t.innerText = letter;
@@ -153,54 +151,117 @@
         if (selectedTileIndex !== null && cell.innerText === "") {
             const letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
             cell.innerText = letter;
-            
-            const icon = iconMap[`${r}-${c}`];
-            if(icon) markBingoCard(icon);
-
+            cell.style.color = "#2563eb"; 
+            newTilesThisTurn.push({r, c, letter});
             gameState[`p${currentPlayer}`].rack.splice(selectedTileIndex, 1);
             selectedTileIndex = null;
             renderRack();
         }
     }
 
+    function recallTiles() {
+        if(!gameActive || newTilesThisTurn.length === 0) return;
+        newTilesThisTurn.forEach(tile => {
+            document.getElementById(`cell-${tile.r}-${tile.c}`).innerText = "";
+            gameState[`p${currentPlayer}`].rack.push(tile.letter);
+        });
+        newTilesThisTurn = [];
+        selectedTileIndex = null;
+        renderRack();
+    }
+
+    function passTurn() {
+        if(!gameActive) return;
+        if(confirm("Pass turn? You will get 7 brand new letters.")) {
+            recallTiles();
+            gameState[`p${currentPlayer}`].rack = generateBalancedHand([]); // Empty current hand and refresh
+            switchTurn();
+        }
+    }
+
+    async function finishTurn() {
+        if(!gameActive || newTilesThisTurn.length === 0) return;
+        const word = scanForWord();
+        if (!word) { alert("Tiles must be in a straight line!"); return; }
+
+        const isValid = await verifyWithAPI(word);
+        if (isValid) {
+            newTilesThisTurn.forEach(tile => {
+                const icon = iconMap[`${tile.r}-${tile.c}`];
+                if(icon) markBingoCard(icon);
+                document.getElementById(`cell-${tile.r}-${tile.c}`).style.color = "black";
+            });
+            newTilesThisTurn = [];
+            // Replenish remaining tiles back up to 7 with the Vowel Guard
+            gameState[`p${currentPlayer}`].rack = generateBalancedHand(gameState[`p${currentPlayer}`].rack);
+            switchTurn();
+        } else {
+            alert(`❌ "${word}" is not a word!`);
+        }
+    }
+
+    function switchTurn() {
+        currentPlayer = currentPlayer === 1 ? 2 : 1;
+        document.getElementById('turn-indicator').className = `game-header p${currentPlayer}-turn`;
+        document.getElementById('turn-text').innerText = `Player ${currentPlayer}'s Turn`;
+        document.getElementById('p1-bingo-zone').classList.toggle('hidden');
+        document.getElementById('p2-bingo-zone').classList.toggle('hidden');
+        selectedTileIndex = null;
+        renderRack();
+    }
+
+    function scanForWord() {
+        const rows = newTilesThisTurn.map(t => t.r), cols = newTilesThisTurn.map(t => t.c);
+        const isH = rows.every(r => r === rows[0]), isV = cols.every(c => c === cols[0]);
+        if (!isH && !isV) return null;
+        let word = "";
+        if (isH) {
+            let r = rows[0], minC = Math.min(...cols), maxC = Math.max(...cols);
+            while(minC > 0 && document.getElementById(`cell-${r}-${minC-1}`).innerText !== "") minC--;
+            while(maxC < 14 && document.getElementById(`cell-${r}-${maxC+1}`).innerText !== "") maxC++;
+            for(let c = minC; c <= maxC; c++) word += document.getElementById(`cell-${r}-${c}`).innerText;
+        } else {
+            let c = cols[0], minR = Math.min(...rows), maxR = Math.max(...rows);
+            while(minR > 0 && document.getElementById(`cell-${minR-1}-${c}`).innerText !== "") minR--;
+            while(maxR < 14 && document.getElementById(`cell-${maxR+1}-${c}`).innerText !== "") maxR++;
+            for(let r = minR; r <= maxR; r++) word += document.getElementById(`cell-${r}-${c}`).innerText;
+        }
+        return word;
+    }
+
+    async function verifyWithAPI(word) {
+        try { const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`); return res.ok; }
+        catch (e) { return true; }
+    }
+
     function markBingoCard(icon) {
-        const playerData = gameState[`p${currentPlayer}`];
-        playerData.bingo.forEach((item, i) => {
-            if(item === icon) {
-                document.getElementById(`p${currentPlayer}-bingo-${i}`).classList.add('marked');
-            }
+        gameState[`p${currentPlayer}`].bingo.forEach((item, i) => {
+            if(item === icon) document.getElementById(`p${currentPlayer}-bingo-${i}`).classList.add('marked');
         });
         checkBingoWin();
     }
 
     function checkBingoWin() {
-        const playerNum = currentPlayer;
-        const cells = [];
-        // Get marked status for all 81 cells
-        for(let i=0; i<81; i++) {
-            cells.push(document.getElementById(`p${playerNum}-bingo-${i}`).classList.contains('marked'));
-        }
-
-        // Check Rows
-        for(let r=0; r<9; r++) {
-            let rowWin = true;
-            for(let c=0; c<9; c++) {
-                if(!cells[r * 9 + c]) rowWin = false;
+        const p = currentPlayer, grid = [];
+        for(let i=0; i<16; i++) grid.push(document.getElementById(`p${p}-bingo-${i}`).classList.contains('marked'));
+        for(let i=0; i<4; i++) {
+            let rW=true, cW=true;
+            for(let j=0; j<4; j++) {
+                if(!grid[i*4+j]) rW=false;
+                if(!grid[j*4+i]) cW=false;
             }
-            if(rowWin) return triggerWin();
-        }
-
-        // Check Columns
-        for(let c=0; c<9; c++) {
-            let colWin = true;
-            for(let r=0; r<9; r++) {
-                if(!cells[r * 9 + c]) colWin = false;
-            }
-            if(colWin) return triggerWin();
+            if(rW || cW) { gameActive = false; document.getElementById('win-overlay').style.display='flex'; }
         }
     }
 
-    function triggerWin() {
-        gameActive = false;
-        document.getElementById('winner-text').innerText = `PLAYER ${currentPlayer} WINS!`;
-        document.getElementById('win-overlay').style.display
+    function renderBingo(p) {
+        const g = document.getElementById(`p${p}-bingo`); g.innerHTML = '';
+        gameState[`p${p}`].bingo.forEach((icon, i) => {
+            const c = document.createElement('div'); c.className = 'bingo-cell'; c.id = `p${p}-bingo-${i}`; c.innerText = icon; g.appendChild(c);
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>

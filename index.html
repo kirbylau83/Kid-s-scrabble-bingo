@@ -2,167 +2,186 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scavenger Scrabble Pro</title>
+    <title>Scavenger Scrabble: 2-Player Edition</title>
     <style>
-        :root { --cell-size: 40px; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
+        body { font-family: 'Comic Sans MS', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; }
         
-        /* Layout Layout */
-        .game-container { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
+        .game-header { text-align: center; margin: 10px; padding: 10px; border-radius: 10px; width: 80%; color: white; transition: 0.3s; }
+        .p1-turn { background: var(--p1-color); }
+        .p2-turn { background: var(--p2-color); }
+
+        .main-layout { display: flex; gap: 20px; align-items: flex-start; margin-top: 10px; }
         
-        /* Scrabble Board */
-        .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #8b5e3c; padding: 5px; border-radius: 8px; border: 4px solid #5d3a24; }
-        .board-cell { width: var(--cell-size); height: var(--cell-size); background: #fff9db; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; cursor: pointer; position: relative; }
-        .icon-square { background: #e0f2fe; } /* Blue tint for icon squares */
-        .icon-overlay { font-size: 0.8rem; position: absolute; bottom: 1px; right: 1px; opacity: 0.6; }
+        /* Board */
+        .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; }
+        .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; }
+        .icon-square::after { content: attr(data-icon); position: absolute; font-size: 12px; bottom: 0; right: 0; opacity: 0.5; }
 
-        /* Bingo Card */
-        .bingo-section { text-align: center; }
-        .bingo-grid { display: grid; grid-template-columns: repeat(9, 35px); gap: 4px; background: #334155; padding: 10px; border-radius: 10px; }
-        .bingo-cell { width: 35px; height: 35px; background: white; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: 0.3s; }
-        .bingo-marked { background: #4ade80; transform: scale(1.1); box-shadow: 0 0 10px #4ade80; }
+        /* Bingo Grid */
+        .bingo-container { text-align: center; }
+        .bingo-grid { display: grid; grid-template-columns: repeat(9, 30px); gap: 2px; background: #cbd5e1; padding: 5px; }
+        .bingo-cell { width: 30px; height: 30px; background: white; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+        .marked { background: #4ade80 !important; }
 
-        /* Controls */
-        .controls { margin-top: 20px; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); width: 100%; max-width: 600px; text-align: center; }
-        #tile-rack { margin: 10px 0; font-size: 1.5rem; letter-spacing: 10px; color: #1e40af; font-weight: bold; }
-        input { padding: 8px; width: 200px; border-radius: 5px; border: 1px solid #ccc; }
-        button { padding: 8px 16px; cursor: pointer; background: #16a34a; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        /* Rack */
+        .rack-container { margin: 20px; padding: 15px; background: #e2e8f0; border-radius: 10px; width: 500px; text-align: center; }
+        .tile { display: inline-block; width: 40px; height: 45px; background: #fef3c7; border: 2px solid #d97706; border-radius: 5px; 
+                line-height: 45px; font-size: 24px; font-weight: bold; margin: 5px; cursor: pointer; user-select: none; }
+        .tile.selected { background: #fbbf24; transform: translateY(-5px); box-shadow: 0 5px 10px rgba(0,0,0,0.2); }
+        
+        .hidden { display: none; }
+        button { padding: 10px 25px; font-size: 18px; cursor: pointer; background: #059669; color: white; border: none; border-radius: 8px; }
     </style>
 </head>
 <body>
 
-    <h1>🏆 Scavenger Scrabble</h1>
+    <div id="turn-indicator" class="game-header p1-turn">
+        <h2 id="turn-text">Player 1's Turn</h2>
+    </div>
 
-    <div class="game-container">
-        <div>
-            <h3>Game Board</h3>
-            <div id="board" class="board"></div>
-        </div>
+    <div class="main-layout">
+        <div id="board" class="board"></div>
 
-        <div class="bingo-section">
-            <h3>Your Bingo Card (9x9)</h3>
-            <div id="bingo-card" class="bingo-grid"></div>
-            <p><small>Match icons to win!</small></p>
+        <div class="bingo-area">
+            <div id="p1-bingo-zone" class="bingo-container">
+                <h4>P1 Bingo Card</h4>
+                <div id="p1-bingo" class="bingo-grid"></div>
+            </div>
+            <div id="p2-bingo-zone" class="bingo-container hidden">
+                <h4>P2 Bingo Card</h4>
+                <div id="p2-bingo" class="bingo-grid"></div>
+            </div>
         </div>
     </div>
 
-    <div class="controls">
-        <div id="tile-rack">Your Tiles: LOADING...</div>
-        <input type="text" id="wordInput" placeholder="Enter word to play...">
-        <button onclick="playWord()">Play Word</button>
-        <p><small>Words can go Up, Down, Left, or Right!</small></p>
+    <div class="rack-container">
+        <div id="current-rack"></div>
+        <br>
+        <button onclick="finishTurn()">Finish Turn (Next Player)</button>
     </div>
 
 <script>
     const icons = ['🍎', '🚀', '🦁', '🍕', '💎', '🌈', '🎸', '🍦', '🎈'];
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let playerTiles = [];
-    let boardState = Array(15).fill(null).map(() => Array(15).fill(null));
-    let iconLocations = {}; // Stores { 'row-col': icon }
+    let currentPlayer = 1;
+    let selectedTileIndex = null;
+    let iconMap = {}; // { "r-c": "icon" }
 
-    // 1. Initialize Game
+    let gameState = {
+        p1: { rack: [], bingo: [] },
+        p2: { rack: [], bingo: [] }
+    };
+
     function init() {
+        generateIconMap();
         createBoard();
-        createBingoCard();
-        drawTiles();
-    }
-
-    // 2. Create 15x15 Board with 30 Random Icons
-    function createBoard() {
-        const boardEl = document.getElementById('board');
-        let placedIcons = 0;
+        gameState.p1.rack = Array.from({length: 10}, () => alphabet[Math.floor(Math.random()*26)]);
+        gameState.p2.rack = Array.from({length: 10}, () => alphabet[Math.floor(Math.random()*26)]);
+        gameState.p1.bingo = Array.from({length: 81}, () => icons[Math.floor(Math.random()*9)]);
+        gameState.p2.bingo = Array.from({length: 81}, () => icons[Math.floor(Math.random()*9)]);
         
-        // Pick 30 random spots for icons
-        let iconPositions = new Set();
-        while(iconPositions.size < 30) {
-            iconPositions.add(Math.floor(Math.random() * 225));
-        }
+        renderBingo(1);
+        renderBingo(2);
+        renderRack();
+    }
 
-        for (let i = 0; i < 225; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'board-cell';
-            const r = Math.floor(i / 15);
-            const c = i % 15;
-            cell.id = `cell-${r}-${c}`;
+    function generateIconMap() {
+        let spots = new Set();
+        while(spots.size < 30) spots.add(Math.floor(Math.random() * 225));
+        spots.forEach(s => {
+            iconMap[`${Math.floor(s/15)}-${s%15}`] = icons[Math.floor(Math.random()*9)];
+        });
+    }
 
-            if (iconPositions.has(i)) {
-                const randomIcon = icons[Math.floor(Math.random() * icons.length)];
-                iconLocations[`${r}-${c}`] = randomIcon;
-                cell.classList.add('icon-square');
-                cell.innerHTML = `<span class="icon-overlay">${randomIcon}</span>`;
+    function createBoard() {
+        const board = document.getElementById('board');
+        for(let r=0; r<15; r++) {
+            for(let c=0; c<15; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'board-cell';
+                if(iconMap[`${r}-${c}`]) {
+                    cell.classList.add('icon-square');
+                    cell.setAttribute('data-icon', iconMap[`${r}-${c}`]);
+                }
+                cell.onclick = () => placeTile(r, c);
+                cell.id = `cell-${r}-${c}`;
+                board.appendChild(cell);
             }
-            boardEl.appendChild(cell);
         }
     }
 
-    // 3. Create 9x9 Bingo Card
-    function createBingoCard() {
-        const bingoEl = document.getElementById('bingo-card');
-        for (let i = 0; i < 81; i++) {
+    function renderBingo(playerNum) {
+        const grid = document.getElementById(`p${playerNum}-bingo`);
+        grid.innerHTML = '';
+        gameState[`p${playerNum}`].bingo.forEach((icon, i) => {
             const cell = document.createElement('div');
             cell.className = 'bingo-cell';
-            const icon = icons[Math.floor(Math.random() * icons.length)];
-            cell.dataset.icon = icon;
+            cell.id = `p${playerNum}-bingo-${i}`;
             cell.innerText = icon;
-            cell.id = `bingo-${i}`;
-            bingoEl.appendChild(cell);
-        }
+            grid.appendChild(cell);
+        });
     }
 
-    // 4. Draw 10 Initial Letters
-    function drawTiles() {
-        playerTiles = [];
-        for(let i=0; i<10; i++) {
-            playerTiles.push(alphabet[Math.floor(Math.random() * 26)]);
-        }
-        updateRack();
+    function renderRack() {
+        const rackDiv = document.getElementById('current-rack');
+        rackDiv.innerHTML = '';
+        const currentRack = gameState[`p${currentPlayer}`].rack;
+        currentRack.forEach((letter, i) => {
+            const t = document.createElement('div');
+            t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '');
+            t.innerText = letter;
+            t.onclick = () => { selectedTileIndex = i; renderRack(); };
+            rackDiv.appendChild(t);
+        });
     }
 
-    function updateRack() {
-        document.getElementById('tile-rack').innerText = "Your Tiles: " + playerTiles.join(' ');
-    }
-
-    // 5. Play Word Logic (Simulated Placement)
-    function playWord() {
-        const word = document.getElementById('wordInput').value.toUpperCase();
-        if(!word) return;
-
-        // For this simple version, we place words randomly on the board for the user
-        // In a full game, you'd click a cell to start placing.
-        let row = Math.floor(Math.random() * 15);
-        let col = Math.floor(Math.random() * (15 - word.length));
-
-        [...word].forEach((letter, index) => {
-            const currentCol = col + index;
-            const cell = document.getElementById(`cell-${row}-${currentCol}`);
-            cell.innerText = letter; // Overwrites the icon visual but we keep the logic
+    function placeTile(r, c) {
+        const cell = document.getElementById(`cell-${r}-${c}`);
+        if (selectedTileIndex !== null && cell.innerText === "") {
+            const letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
+            cell.innerText = letter;
             
-            // Check if this spot had an icon
-            const iconAtSpot = iconLocations[`${row}-${currentCol}`];
-            if(iconAtSpot) {
-                markBingo(iconAtSpot);
-            }
-        });
+            // Check Icon
+            const icon = iconMap[`${r}-${c}`];
+            if(icon) markBingoCard(icon);
 
-        document.getElementById('wordInput').value = '';
+            // Remove from rack
+            gameState[`p${currentPlayer}`].rack.splice(selectedTileIndex, 1);
+            selectedTileIndex = null;
+            renderRack();
+        }
     }
 
-    // 6. Mark Bingo Card
-    function markBingo(icon) {
-        const bingoCells = document.querySelectorAll('.bingo-cell');
-        bingoCells.forEach(cell => {
-            if(cell.dataset.icon === icon) {
-                cell.classList.add('bingo-marked');
+    function markBingoCard(icon) {
+        const playerData = gameState[`p${currentPlayer}`];
+        playerData.bingo.forEach((item, i) => {
+            if(item === icon) {
+                document.getElementById(`p${currentPlayer}-bingo-${i}`).classList.add('marked');
             }
         });
-        checkWin();
     }
 
-    // 7. Check for Row/Col Win
-    function checkWin() {
-        // Logic for 9x9 win check would go here
-        // For now, let's just celebrate any mark!
+    function finishTurn() {
+        // Refill rack to 10
+        while(gameState[`p${currentPlayer}`].rack.length < 10) {
+            gameState[`p${currentPlayer}`].rack.push(alphabet[Math.floor(Math.random()*26)]);
+        }
+
+        // Switch Player
+        currentPlayer = currentPlayer === 1 ? 2 : 1;
+        
+        // Update UI
+        const indicator = document.getElementById('turn-indicator');
+        const text = document.getElementById('turn-text');
+        indicator.className = `game-header p${currentPlayer}-turn`;
+        text.innerText = `Player ${currentPlayer}'s Turn`;
+        
+        document.getElementById('p1-bingo-zone').classList.toggle('hidden');
+        document.getElementById('p2-bingo-zone').classList.toggle('hidden');
+        
+        selectedTileIndex = null;
+        renderRack();
     }
 
     init();

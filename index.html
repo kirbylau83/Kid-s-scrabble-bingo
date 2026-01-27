@@ -5,36 +5,45 @@
     <title>Scavenger Scrabble: 2-Player Edition</title>
     <style>
         :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
-        body { font-family: 'Comic Sans MS', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: 'Comic Sans MS', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
         
-        .game-header { text-align: center; margin: 10px; padding: 10px; border-radius: 10px; width: 80%; color: white; transition: 0.3s; }
+        .game-header { text-align: center; margin: 10px; padding: 10px; border-radius: 10px; width: 80%; color: white; transition: 0.3s; z-index: 10; }
         .p1-turn { background: var(--p1-color); }
         .p2-turn { background: var(--p2-color); }
 
         .main-layout { display: flex; gap: 20px; align-items: flex-start; margin-top: 10px; }
         
-        /* Board */
-        .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; }
+        .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; border-radius: 8px; }
         .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; }
         .icon-square::after { content: attr(data-icon); position: absolute; font-size: 12px; bottom: 0; right: 0; opacity: 0.5; }
 
-        /* Bingo Grid */
         .bingo-container { text-align: center; }
-        .bingo-grid { display: grid; grid-template-columns: repeat(9, 30px); gap: 2px; background: #cbd5e1; padding: 5px; }
-        .bingo-cell { width: 30px; height: 30px; background: white; font-size: 14px; display: flex; align-items: center; justify-content: center; }
-        .marked { background: #4ade80 !important; }
+        .bingo-grid { display: grid; grid-template-columns: repeat(9, 30px); gap: 2px; background: #cbd5e1; padding: 5px; border-radius: 5px; }
+        .bingo-cell { width: 30px; height: 30px; background: white; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: background 0.3s; }
+        .marked { background: #4ade80 !important; font-weight: bold; }
 
-        /* Rack */
-        .rack-container { margin: 20px; padding: 15px; background: #e2e8f0; border-radius: 10px; width: 500px; text-align: center; }
+        .rack-container { margin: 20px; padding: 15px; background: #e2e8f0; border-radius: 10px; width: 600px; text-align: center; border: 2px dashed #94a3b8; }
         .tile { display: inline-block; width: 40px; height: 45px; background: #fef3c7; border: 2px solid #d97706; border-radius: 5px; 
-                line-height: 45px; font-size: 24px; font-weight: bold; margin: 5px; cursor: pointer; user-select: none; }
-        .tile.selected { background: #fbbf24; transform: translateY(-5px); box-shadow: 0 5px 10px rgba(0,0,0,0.2); }
+                line-height: 45px; font-size: 24px; font-weight: bold; margin: 5px; cursor: pointer; user-select: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .tile.selected { background: #fbbf24; transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.2); border-color: #92400e; }
         
         .hidden { display: none; }
-        button { padding: 10px 25px; font-size: 18px; cursor: pointer; background: #059669; color: white; border: none; border-radius: 8px; }
+        button { padding: 12px 30px; font-size: 18px; cursor: pointer; background: #059669; color: white; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        button:hover { background: #047857; transform: scale(1.05); }
+
+        /* Win Message Overlay */
+        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); 
+                       display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 100; }
+        #win-overlay h1 { font-size: 4rem; margin-bottom: 10px; }
     </style>
 </head>
 <body>
+
+    <div id="win-overlay">
+        <h1 id="winner-text">PLAYER 1 WINS!</h1>
+        <p>BINGO! A full row or column was completed!</p>
+        <button onclick="location.reload()">Play Again</button>
+    </div>
 
     <div id="turn-indicator" class="game-header p1-turn">
         <h2 id="turn-text">Player 1's Turn</h2>
@@ -45,11 +54,11 @@
 
         <div class="bingo-area">
             <div id="p1-bingo-zone" class="bingo-container">
-                <h4>P1 Bingo Card</h4>
+                <h4>P1 Bingo Card (9x9)</h4>
                 <div id="p1-bingo" class="bingo-grid"></div>
             </div>
             <div id="p2-bingo-zone" class="bingo-container hidden">
-                <h4>P2 Bingo Card</h4>
+                <h4>P2 Bingo Card (9x9)</h4>
                 <div id="p2-bingo" class="bingo-grid"></div>
             </div>
         </div>
@@ -66,7 +75,8 @@
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     let currentPlayer = 1;
     let selectedTileIndex = null;
-    let iconMap = {}; // { "r-c": "icon" }
+    let iconMap = {}; 
+    let gameActive = true;
 
     let gameState = {
         p1: { rack: [], bingo: [] },
@@ -76,10 +86,11 @@
     function init() {
         generateIconMap();
         createBoard();
-        gameState.p1.rack = Array.from({length: 10}, () => alphabet[Math.floor(Math.random()*26)]);
-        gameState.p2.rack = Array.from({length: 10}, () => alphabet[Math.floor(Math.random()*26)]);
-        gameState.p1.bingo = Array.from({length: 81}, () => icons[Math.floor(Math.random()*9)]);
-        gameState.p2.bingo = Array.from({length: 81}, () => icons[Math.floor(Math.random()*9)]);
+        // Setup P1 and P2 data
+        for(let p of ['p1', 'p2']) {
+            gameState[p].rack = Array.from({length: 10}, () => alphabet[Math.floor(Math.random()*26)]);
+            gameState[p].bingo = Array.from({length: 81}, () => icons[Math.floor(Math.random()*9)]);
+        }
         
         renderBingo(1);
         renderBingo(2);
@@ -131,22 +142,21 @@
             const t = document.createElement('div');
             t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '');
             t.innerText = letter;
-            t.onclick = () => { selectedTileIndex = i; renderRack(); };
+            t.onclick = () => { if(gameActive) { selectedTileIndex = i; renderRack(); } };
             rackDiv.appendChild(t);
         });
     }
 
     function placeTile(r, c) {
+        if(!gameActive) return;
         const cell = document.getElementById(`cell-${r}-${c}`);
         if (selectedTileIndex !== null && cell.innerText === "") {
             const letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
             cell.innerText = letter;
             
-            // Check Icon
             const icon = iconMap[`${r}-${c}`];
             if(icon) markBingoCard(icon);
 
-            // Remove from rack
             gameState[`p${currentPlayer}`].rack.splice(selectedTileIndex, 1);
             selectedTileIndex = null;
             renderRack();
@@ -160,31 +170,37 @@
                 document.getElementById(`p${currentPlayer}-bingo-${i}`).classList.add('marked');
             }
         });
+        checkBingoWin();
     }
 
-    function finishTurn() {
-        // Refill rack to 10
-        while(gameState[`p${currentPlayer}`].rack.length < 10) {
-            gameState[`p${currentPlayer}`].rack.push(alphabet[Math.floor(Math.random()*26)]);
+    function checkBingoWin() {
+        const playerNum = currentPlayer;
+        const cells = [];
+        // Get marked status for all 81 cells
+        for(let i=0; i<81; i++) {
+            cells.push(document.getElementById(`p${playerNum}-bingo-${i}`).classList.contains('marked'));
         }
 
-        // Switch Player
-        currentPlayer = currentPlayer === 1 ? 2 : 1;
-        
-        // Update UI
-        const indicator = document.getElementById('turn-indicator');
-        const text = document.getElementById('turn-text');
-        indicator.className = `game-header p${currentPlayer}-turn`;
-        text.innerText = `Player ${currentPlayer}'s Turn`;
-        
-        document.getElementById('p1-bingo-zone').classList.toggle('hidden');
-        document.getElementById('p2-bingo-zone').classList.toggle('hidden');
-        
-        selectedTileIndex = null;
-        renderRack();
+        // Check Rows
+        for(let r=0; r<9; r++) {
+            let rowWin = true;
+            for(let c=0; c<9; c++) {
+                if(!cells[r * 9 + c]) rowWin = false;
+            }
+            if(rowWin) return triggerWin();
+        }
+
+        // Check Columns
+        for(let c=0; c<9; c++) {
+            let colWin = true;
+            for(let r=0; r<9; r++) {
+                if(!cells[r * 9 + c]) colWin = false;
+            }
+            if(colWin) return triggerWin();
+        }
     }
 
-    init();
-</script>
-</body>
-</html>
+    function triggerWin() {
+        gameActive = false;
+        document.getElementById('winner-text').innerText = `PLAYER ${currentPlayer} WINS!`;
+        document.getElementById('win-overlay').style.display

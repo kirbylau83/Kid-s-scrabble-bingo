@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Scavenger Scrabble: Strict Connection Edition</title>
+    <title>Scavenger Scrabble: Weighted Edition</title>
     <style>
         :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
         body { font-family: 'Comic Sans MS', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
@@ -16,9 +16,7 @@
         .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; border-radius: 8px; }
         .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.2rem; box-sizing: border-box; }
         
-        /* Center Square Correction */
         .board-cell.start-square { background-color: #ff4d4d !important; border: 2px solid #b30000 !important; }
-        
         .icon-square::after { content: attr(data-icon); position: absolute; font-size: 14px; bottom: 0; right: 0; opacity: 0.6; }
 
         .bingo-grid { display: grid; grid-template-columns: repeat(4, 60px); gap: 5px; background: #cbd5e1; padding: 10px; border-radius: 10px; }
@@ -28,6 +26,7 @@
         .rack-container { margin: 20px; padding: 15px; background: #e2e8f0; border-radius: 10px; width: 600px; text-align: center; border: 2px dashed #94a3b8; }
         .tile { display: inline-block; width: 45px; height: 50px; background: #fef3c7; border: 2px solid #d97706; border-radius: 5px; line-height: 50px; font-size: 28px; font-weight: bold; margin: 5px; cursor: pointer; }
         .tile.selected { background: #fbbf24; transform: translateY(-8px); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
+        .tile.blank-tile { background: #22c55e !important; border-color: #166534 !important; color: white; }
         
         .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
         button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; }
@@ -69,8 +68,22 @@
 
 <script>
     const icons = ['🍎', '🚀', '🦁', '🍕', '💎', '🌈', '🎸', '🍦', '🎈'];
-    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const vowels = "AEIOU";
+    
+    // Traditional Scrabble Weighting Pool
+    const weightedLetters = [
+        ...Array(12).fill('E'),
+        ...Array(9).fill('A'), ...Array(9).fill('I'),
+        ...Array(8).fill('O'),
+        ...Array(6).fill('N'), ...Array(6).fill('R'), ...Array(6).fill('T'),
+        ...Array(4).fill('D'), ...Array(4).fill('L'), ...Array(4).fill('S'), ...Array(4).fill('U'),
+        ...Array(3).fill('G'),
+        ...Array(2).fill('B'), ...Array(2).fill('C'), ...Array(2).fill('M'), ...Array(2).fill('P'), 
+        ...Array(2).fill('F'), ...Array(2).fill('H'), ...Array(2).fill('V'), ...Array(2).fill('W'), 
+        ...Array(2).fill('Y'), ...Array(2).fill('?'), // '?' represents blank
+        ...Array(1).fill('K'), ...Array(1).fill('J'), ...Array(1).fill('X'), ...Array(1).fill('Q'), ...Array(1).fill('Z')
+    ];
+
     let currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
     let boardIsFresh = true;
     let gameState = { p1: { rack: [], bingo: [] }, p2: { rack: [], bingo: [] } };
@@ -87,12 +100,16 @@
 
     function generateBalancedHand(existingRack = []) {
         let rack = [...existingRack];
-        while(rack.length < 7) rack.push(alphabet[Math.floor(Math.random() * 26)]);
+        while(rack.length < 7) {
+            rack.push(weightedLetters[Math.floor(Math.random() * weightedLetters.length)]);
+        }
         let vCount = rack.filter(l => vowels.includes(l)).length;
         while(vCount < 2) {
-            let nvIdx = rack.findIndex(l => !vowels.includes(l));
-            if(nvIdx !== -1) { rack[nvIdx] = vowels[Math.floor(Math.random() * 5)]; vCount++; }
-            else break;
+            let nvIdx = rack.findIndex(l => !vowels.includes(l) && l !== '?');
+            if(nvIdx !== -1) {
+                rack[nvIdx] = vowels[Math.floor(Math.random() * 5)];
+                vCount++;
+            } else break;
         }
         return rack;
     }
@@ -130,7 +147,12 @@
         gameState[`p${currentPlayer}`].rack.forEach((letter, i) => {
             const t = document.createElement('div');
             t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '');
-            t.innerText = letter;
+            if (letter === '?') {
+                t.classList.add('blank-tile');
+                t.innerText = ""; // Blank on rack
+            } else {
+                t.innerText = letter;
+            }
             t.onclick = () => { if(gameActive) { selectedTileIndex = i; renderRack(); } };
             rackDiv.appendChild(t);
         });
@@ -140,10 +162,24 @@
         if(!gameActive) return;
         const cell = document.getElementById(`cell-${r}-${c}`);
         if (selectedTileIndex !== null && cell.innerText === "") {
-            const letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
+            let letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
+            let isBlank = letter === '?';
+
+            if(isBlank) {
+                let choice = prompt("What letter should this blank be?").toUpperCase();
+                if(choice && choice.length === 1 && /[A-Z]/.test(choice)) {
+                    letter = choice;
+                } else {
+                    alert("Please enter a single letter A-Z.");
+                    return;
+                }
+            }
+
             cell.innerText = letter;
-            cell.style.color = "#2563eb"; // Blue color for "In Progress"
-            newTilesThisTurn.push({r, c, letter});
+            cell.style.color = "#2563eb"; 
+            if(isBlank) cell.style.backgroundColor = "#dcfce7"; // Light green background on board
+
+            newTilesThisTurn.push({r, c, letter, wasBlank: isBlank});
             gameState[`p${currentPlayer}`].rack.splice(selectedTileIndex, 1);
             selectedTileIndex = null;
             renderRack();
@@ -155,7 +191,8 @@
             const cell = document.getElementById(`cell-${tile.r}-${tile.c}`);
             cell.innerText = "";
             cell.style.color = "";
-            gameState[`p${currentPlayer}`].rack.push(tile.letter);
+            cell.style.backgroundColor = "";
+            gameState[`p${currentPlayer}`].rack.push(tile.wasBlank ? '?' : tile.letter);
         });
         newTilesThisTurn = [];
         selectedTileIndex = null;
@@ -173,7 +210,6 @@
     async function finishTurn() {
         if(newTilesThisTurn.length === 0) return;
 
-        // CONNECTION CHECK
         let validPlacement = false;
         if (boardIsFresh) {
             validPlacement = newTilesThisTurn.some(t => t.r === 7 && t.c === 7);
@@ -185,7 +221,6 @@
                     let nr = t.r + dr, nc = t.c + dc;
                     if(nr>=0 && nr<15 && nc>=0 && nc<15) {
                         let neighborCell = document.getElementById(`cell-${nr}-${nc}`);
-                        // Connection only counts if the neighbor is a "Locked" tile (black color)
                         return neighborCell.innerText !== "" && neighborCell.style.color === "rgb(0, 0, 0)";
                     }
                     return false;
@@ -202,7 +237,6 @@
             newTilesThisTurn.forEach(tile => {
                 const icon = iconMap[`${tile.r}-${tile.c}`];
                 if(icon) markBingoCard(icon);
-                // LOCK THE TILE: Change color to black
                 document.getElementById(`cell-${tile.r}-${tile.c}`).style.color = "rgb(0, 0, 0)";
             });
             newTilesThisTurn = [];
@@ -238,7 +272,7 @@
             let c = cols[0], minR = Math.min(...rows), maxR = Math.max(...rows);
             while(minR > 0 && document.getElementById(`cell-${minR-1}-${c}`).innerText !== "") minR--;
             while(maxR < 14 && document.getElementById(`cell-${maxR+1}-${c}`).innerText !== "") maxR++;
-            for(let r = minR; r <= maxR; r++) word += document.getElementById(`cell-${r}-${c}`).innerText;
+            for(let r = minRow = minR; r <= maxR; r++) word += document.getElementById(`cell-${r}-${c}`).innerText;
         }
         return word;
     }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Scavenger Scrabble: Remote Edition</title>
+    <title>Scavenger Scrabble: Remote Chat Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --cell-size: 45px; --p1-color: #3b82f6; --p2-color: #ef4444; }
@@ -16,6 +16,17 @@
         .avatar-grid { display: grid; grid-template-columns: repeat(3, 80px); gap: 10px; margin-top: 10px; }
         .avatar-choice { font-size: 40px; background: white; border: 3px solid #cbd5e1; border-radius: 12px; cursor: pointer; text-align: center; padding: 5px; }
         .selected-avatar { border-color: #3b82f6; background: #dbeafe; }
+
+        /* CHAT SYSTEM */
+        #chat-bubble { position: fixed; bottom: 180px; right: 20px; width: 50px; height: 50px; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 2500; border: 3px solid white; }
+        #chat-window { position: fixed; bottom: 180px; right: 20px; width: 280px; height: 350px; background: white; border: 3px solid #3b82f6; border-radius: 20px; display: none; flex-direction: column; z-index: 2600; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden;}
+        #chat-history { flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background: #f8fafc; }
+        .chat-msg { padding: 8px 12px; border-radius: 15px; max-width: 80%; font-size: 0.9rem; line-height: 1.4; word-wrap: break-word; }
+        .msg-me { align-self: flex-end; background: #3b82f6; color: white; border-bottom-right-radius: 2px; }
+        .msg-them { align-self: flex-start; background: #e2e8f0; color: #1e293b; border-bottom-left-radius: 2px; }
+        .chat-input-area { display: flex; padding: 10px; border-top: 2px solid #cbd5e1; gap: 5px; }
+        #chat-input { flex-grow: 1; border: 2px solid #cbd5e1; border-radius: 10px; padding: 5px 10px; font-family: inherit; }
+        .msg-notify { position: absolute; top: -5px; right: -5px; width: 15px; height: 15px; background: #ef4444; border-radius: 50%; display: none; border: 2px solid white; }
 
         /* GAME UI */
         #game-page { display: none; width: 100%; height: 100%; flex-direction: column; }
@@ -61,7 +72,7 @@
             <input type="text" id="player-name-input" placeholder="Your Name" style="padding:10px; width:80%; border-radius:10px; border:2px solid #cbd5e1; margin-bottom:10px;">
             <div class="avatar-grid" id="avatar-grid">
                 <div class="avatar-choice" onclick="pickAvatar(this, '🐼')">🐼</div>
-                <div class="avatar-choice" onclick="selectAvatar(this, '🐯')">🐯</div>
+                <div class="avatar-choice" onclick="pickAvatar(this, '🐯')">🐯</div>
                 <div class="avatar-choice" onclick="pickAvatar(this, '🦁')">🦁</div>
                 <div class="avatar-choice" onclick="pickAvatar(this, '🐘')">🐘</div>
                 <div class="avatar-choice" onclick="pickAvatar(this, '🐰')">🐰</div>
@@ -92,6 +103,22 @@
             </div>
         </div>
         <div class="board-container"><div id="board" class="board"></div></div>
+        
+        <div id="chat-bubble" onclick="toggleChat()">
+            💬<div id="chat-notify" class="msg-notify"></div>
+        </div>
+        <div id="chat-window">
+            <div style="background:#3b82f6; color:white; padding:10px; font-weight:bold; display:flex; justify-content:space-between;">
+                <span>Logan Chat</span>
+                <span onclick="toggleChat()" style="cursor:pointer">✕</span>
+            </div>
+            <div id="chat-history"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Type hi!..." onkeypress="if(event.key==='Enter') sendChat()">
+                <button onclick="sendChat()" style="background:#3b82f6; flex:none; padding:5px 12px;">Send</button>
+            </div>
+        </div>
+
         <div class="bottom-dock">
             <div class="rack-scroll"><div id="current-rack"></div></div>
             <div style="display:flex; gap:8px; width:95%; margin-top:5px;">
@@ -119,7 +146,6 @@
 <script>
     // --- MULTIPLAYER CORE ---
     let peer, conn;
-    let myID, opponentID;
     let isHost = false;
     let myProfile = { name: "", avatar: "🐼" };
     let opponentProfile = { name: "Friend", avatar: "❓" };
@@ -130,87 +156,99 @@
         myProfile.avatar = emo;
     }
 
-    function generateShortID() { return Math.floor(1000 + Math.random() * 9000).toString(); }
-
     function startHosting() {
         myProfile.name = document.getElementById('player-name-input').value || "Player 1";
         isHost = true;
-        const roomID = generateShortID();
+        const roomID = Math.floor(1000 + Math.random() * 9000).toString();
         peer = new Peer("SS-" + roomID);
-        
         peer.on('open', (id) => {
             document.getElementById('room-code-display').innerText = roomID;
             document.getElementById('host-info').classList.remove('hidden');
         });
-
-        peer.on('connection', (connection) => {
-            conn = connection;
-            setupConn();
-        });
+        peer.on('connection', (c) => { conn = c; setupConn(); });
     }
 
     function joinGame() {
         myProfile.name = document.getElementById('player-name-input').value || "Player 2";
         const code = document.getElementById('join-code-input').value;
         if (!code) return alert("Enter a code!");
-        
         peer = new Peer();
-        peer.on('open', () => {
-            conn = peer.connect("SS-" + code);
-            setupConn();
-        });
+        peer.on('open', () => { conn = peer.connect("SS-" + code); setupConn(); });
     }
 
     function setupConn() {
-        conn.on('open', () => {
-            // Send my profile to opponent
-            conn.send({ type: 'profile', profile: myProfile });
-        });
-
+        conn.on('open', () => conn.send({ type: 'profile', profile: myProfile }));
         conn.on('data', (data) => {
             if (data.type === 'profile') {
                 opponentProfile = data.profile;
                 if (isHost) {
-                    // Host initializes game state and sends it
                     initGame();
                     conn.send({ type: 'init', state: { tileBag, iconMap, gameState, boardIsFresh } });
                     startGameUI();
                 }
             }
             if (data.type === 'init') {
-                tileBag = data.state.tileBag;
-                iconMap = data.state.iconMap;
-                gameState = data.state.gameState;
-                boardIsFresh = data.state.boardIsFresh;
+                tileBag = data.state.tileBag; iconMap = data.state.iconMap;
+                gameState = data.state.gameState; boardIsFresh = data.state.boardIsFresh;
                 startGameUI();
             }
-            if (data.type === 'place') { remotePlace(data.r, data.c, data.letter, data.wasBlank); }
-            if (data.type === 'recall') { remoteRecall(data.tiles); }
-            if (data.type === 'finish') { syncTurn(data.newTiles, data.newBag, data.newRack, data.newMarks); }
-            if (data.type === 'pass') { syncPass(data.newBag, data.newRack); }
+            if (data.type === 'place') remotePlace(data.r, data.c, data.letter, data.wasBlank);
+            if (data.type === 'recall') remoteRecall(data.tiles);
+            if (data.type === 'finish') syncTurn(data.newTiles, data.newBag, data.newRack, data.newMarks);
+            if (data.type === 'pass') syncPass(data.newBag, data.newRack);
+            if (data.type === 'chat') receiveChat(data.msg);
         });
     }
 
     function startGameUI() {
         document.getElementById('selection-screen').style.display = 'none';
         document.getElementById('game-page').style.display = 'block';
-        createBoard();
-        updateUI();
+        createBoard(); updateUI();
+    }
+
+    // --- CHAT LOGIC ---
+    function toggleChat() {
+        const win = document.getElementById('chat-window');
+        const isOpening = win.style.display !== 'flex';
+        win.style.display = isOpening ? 'flex' : 'none';
+        if (isOpening) document.getElementById('chat-notify').style.display = 'none';
+    }
+
+    function sendChat() {
+        const input = document.getElementById('chat-input');
+        const msg = input.value.trim();
+        if (!msg) return;
+        addMsgToHistory(msg, 'msg-me');
+        conn.send({ type: 'chat', msg: msg });
+        input.value = '';
+    }
+
+    function receiveChat(msg) {
+        addMsgToHistory(msg, 'msg-them');
+        if (document.getElementById('chat-window').style.display !== 'flex') {
+            document.getElementById('chat-notify').style.display = 'block';
+        }
+    }
+
+    function addMsgToHistory(msg, className) {
+        const history = document.getElementById('chat-history');
+        const div = document.createElement('div');
+        div.className = 'chat-msg ' + className;
+        div.innerText = msg;
+        history.appendChild(div);
+        history.scrollTop = history.scrollHeight;
     }
 
     // --- GAME LOGIC ---
-    const icons = ['🍎', '🚀', '🦁', '🍕', '💎', '🌈', '🎸', '🍦', '🎈'];
     const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const vowels = "AEIOU";
     const tileDistribution = {'E': 12, 'A': 9, 'I': 9, 'O': 8, 'N': 6, 'R': 6, 'T': 6, 'D': 4, 'L': 4, 'S': 4, 'U': 4, 'G': 3, 'B': 2, 'C': 2, 'M': 2, 'P': 2, 'F': 2, 'H': 2, 'V': 2, 'W': 2, 'Y': 2, '?': 2, 'K': 1, 'J': 1, 'X': 1, 'Q': 1, 'Z': 1};
-
     let tileBag = [], currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
     let boardIsFresh = true, gameState = { p1: { rack: [], bingo: [], marks: new Array(9).fill(false) }, p2: { rack: [], bingo: [], marks: new Array(9).fill(false) } };
 
     function initGame() {
         for (let l in tileDistribution) { for (let i = 0; i < tileDistribution[l]; i++) tileBag.push(l); }
-        shuffle(tileBag);
-        generateIconMap();
+        shuffle(tileBag); generateIconMap();
         for(let p of ['p1', 'p2']) {
             gameState[p].rack = drawBalanced(7);
             gameState[p].bingo = Array.from({length: 9}, () => icons[Math.floor(Math.random()*9)]);
@@ -249,60 +287,47 @@
 
     function updateUI() {
         const turnID = isHost ? 1 : 2;
-        const myTurn = (currentPlayer === turnID);
         const pKey = `p${currentPlayer}`;
         const pData = (currentPlayer === 1) ? (isHost ? myProfile : opponentProfile) : (isHost ? opponentProfile : myProfile);
-
         const turnBox = document.getElementById('turn-box');
-        turnBox.innerText = myTurn ? "YOUR TURN!" : `${pData.name}'s Turn`;
+        turnBox.innerText = (currentPlayer === turnID) ? "YOUR TURN!" : `${pData.name}'s Turn`;
         turnBox.style.background = (currentPlayer === 1) ? "var(--p1-color)" : "var(--p2-color)";
-        
         document.getElementById('active-avatar').innerText = pData.avatar;
         const g = document.getElementById('active-bingo'); g.innerHTML = '';
         gameState[pKey].bingo.forEach((icon, i) => {
             const c = document.createElement('div'); c.className = 'bingo-cell' + (gameState[pKey].marks[i] ? ' marked' : '');
             c.innerText = icon; g.appendChild(c);
         });
-
         const d = document.getElementById('bag-display');
         const counts = {}; tileBag.forEach(l => counts[l] = (counts[l] || 0) + 1);
         d.innerHTML = '';
-        Object.keys(tileDistribution).sort().forEach(l => {
-            if (counts[l] > 0) {
-                let item = document.createElement('div'); item.innerHTML = `${l === '?' ? '♻️' : l}:${counts[l]}`;
-                d.appendChild(item);
-            }
-        });
+        Object.keys(tileDistribution).sort().forEach(l => { if (counts[l] > 0) { let item = document.createElement('div'); item.innerHTML = `${l === '?' ? '♻️' : l}:${counts[l]}`; d.appendChild(item); } });
         renderRack();
     }
 
     function renderRack() {
-        const myActualID = isHost ? 1 : 2;
+        const myID = isHost ? 1 : 2;
         const rD = document.getElementById('current-rack'); rD.innerHTML = '';
-        gameState[`p${myActualID}`].rack.forEach((l, i) => {
+        gameState[`p${myID}`].rack.forEach((l, i) => {
             const t = document.createElement('div'); 
             t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '') + (l === '?' ? ' blank-tile' : '');
             t.innerText = l === '?' ? "" : l;
-            t.onclick = () => { if(currentPlayer === myActualID) { selectedTileIndex = i; renderRack(); } };
+            t.onclick = () => { if(currentPlayer === myID) { selectedTileIndex = i; renderRack(); } };
             rD.appendChild(t);
         });
     }
 
     function placeTile(r, c) {
-        const myActualID = isHost ? 1 : 2;
-        if(currentPlayer !== myActualID) return;
+        const myID = isHost ? 1 : 2;
+        if(currentPlayer !== myID) return;
         const cell = document.getElementById(`cell-${r}-${c}`);
         if (selectedTileIndex !== null && cell.innerText === "") {
-            let letter = gameState[`p${myActualID}`].rack[selectedTileIndex];
+            let letter = gameState[`p${myID}`].rack[selectedTileIndex];
             let wasBlank = (letter === '?');
-            if(wasBlank) {
-                letter = prompt("What letter?").toUpperCase();
-                if(!letter || letter.length !== 1) return;
-            }
-            cell.innerText = letter; cell.style.color = "#2563eb"; 
-            if(wasBlank) cell.style.backgroundColor = "#dcfce7";
+            if(wasBlank) { letter = prompt("What letter?").toUpperCase(); if(!letter || letter.length !== 1) return; }
+            cell.innerText = letter; cell.style.color = "#2563eb"; if(wasBlank) cell.style.backgroundColor = "#dcfce7";
             newTilesThisTurn.push({r, c, letter, wasBlank});
-            gameState[`p${myActualID}`].rack.splice(selectedTileIndex, 1);
+            gameState[`p${myID}`].rack.splice(selectedTileIndex, 1);
             conn.send({ type: 'place', r, c, letter, wasBlank });
             selectedTileIndex = null; renderRack();
         }
@@ -310,96 +335,66 @@
 
     function remotePlace(r, c, letter, wasBlank) {
         const cell = document.getElementById(`cell-${r}-${c}`);
-        cell.innerText = letter; cell.style.color = "#2563eb";
-        if(wasBlank) cell.style.backgroundColor = "#dcfce7";
+        cell.innerText = letter; cell.style.color = "#2563eb"; if(wasBlank) cell.style.backgroundColor = "#dcfce7";
     }
 
     function recallTiles() {
+        const myID = isHost ? 1 : 2;
         newTilesThisTurn.forEach(t => {
-            document.getElementById(`cell-${t.r}-${t.c}`).innerText = "";
-            document.getElementById(`cell-${t.r}-${t.c}`).style.backgroundColor = "";
-            gameState[`p${isHost?1:2}`].rack.push(t.wasBlank ? '?' : t.letter);
+            const cell = document.getElementById(`cell-${t.r}-${t.c}`);
+            cell.innerText = ""; cell.style.backgroundColor = "";
+            gameState[`p${myID}`].rack.push(t.wasBlank ? '?' : t.letter);
         });
         conn.send({ type: 'recall', tiles: newTilesThisTurn });
         newTilesThisTurn = []; selectedTileIndex = null; renderRack();
     }
 
-    function remoteRecall(tiles) {
-        tiles.forEach(t => {
-            const cell = document.getElementById(`cell-${t.r}-${t.c}`);
-            cell.innerText = ""; cell.style.backgroundColor = "";
-        });
-    }
+    function remoteRecall(tiles) { tiles.forEach(t => { const cell = document.getElementById(`cell-${t.r}-${t.c}`); cell.innerText = ""; cell.style.backgroundColor = ""; }); }
 
     async function finishTurn() {
         if(newTilesThisTurn.length === 0) return;
-        // ... (Connection checks and word verification same as before) ...
         const word = scanForWord();
         if (await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`).then(r => r.ok)) {
             newTilesThisTurn.forEach(t => {
-                const squareIcon = iconMap[`${t.r}-${t.c}`];
-                if(squareIcon) {
-                    gameState[`p${currentPlayer}`].bingo.forEach((item, i) => {
-                        if(item === squareIcon) gameState[`p${currentPlayer}`].marks[i] = true;
-                    });
-                }
+                const icon = iconMap[`${t.r}-${t.c}`];
+                if(icon) gameState[`p${currentPlayer}`].bingo.forEach((item, i) => { if(item === icon) gameState[`p${currentPlayer}`].marks[i] = true; });
                 document.getElementById(`cell-${t.r}-${t.c}`).style.color = "black";
             });
             const oldTiles = [...newTilesThisTurn];
             newTilesThisTurn = []; boardIsFresh = false;
             gameState[`p${currentPlayer}`].rack = drawBalanced(7, gameState[`p${currentPlayer}`].rack);
-            
-            conn.send({ 
-                type: 'finish', 
-                newTiles: oldTiles, 
-                newBag: tileBag, 
-                newRack: gameState[`p${currentPlayer}`].rack,
-                newMarks: gameState[`p${currentPlayer}`].marks
-            });
-            checkWin();
-            currentPlayer = (currentPlayer === 1) ? 2 : 1;
-            updateUI();
+            conn.send({ type: 'finish', newTiles: oldTiles, newBag: tileBag, newRack: gameState[`p${currentPlayer}`].rack, newMarks: gameState[`p${currentPlayer}`].marks });
+            checkWin(); currentPlayer = (currentPlayer === 1) ? 2 : 1; updateUI();
         } else alert("Not a word!");
     }
 
     function syncTurn(tiles, bag, rack, marks) {
         tiles.forEach(t => document.getElementById(`cell-${t.r}-${t.c}`).style.color = "black");
-        tileBag = bag;
-        gameState[`p${currentPlayer}`].rack = rack;
-        gameState[`p${currentPlayer}`].marks = marks;
-        boardIsFresh = false;
-        checkWin();
-        currentPlayer = (currentPlayer === 1) ? 2 : 1;
-        updateUI();
+        tileBag = bag; gameState[`p${currentPlayer}`].rack = rack; gameState[`p${currentPlayer}`].marks = marks; boardIsFresh = false;
+        checkWin(); currentPlayer = (currentPlayer === 1) ? 2 : 1; updateUI();
     }
 
     function passTurn() {
-        if(confirm("Pass and swap letters?")) {
-            recallTiles();
-            tileBag.push(...gameState[`p${isHost?1:2}`].rack);
-            shuffle(tileBag);
-            gameState[`p${isHost?1:2}`].rack = drawBalanced(7);
-            conn.send({ type: 'pass', newBag: tileBag, newRack: gameState[`p${isHost?1:2}`].rack });
-            currentPlayer = (currentPlayer === 1) ? 2 : 1;
-            updateUI();
+        const myID = isHost ? 1 : 2;
+        if(confirm("Swap letters?")) {
+            recallTiles(); tileBag.push(...gameState[`p${myID}`].rack); shuffle(tileBag);
+            gameState[`p${myID}`].rack = drawBalanced(7);
+            conn.send({ type: 'pass', newBag: tileBag, newRack: gameState[`p${myID}`].rack });
+            currentPlayer = (currentPlayer === 1) ? 2 : 1; updateUI();
         }
     }
 
-    function syncPass(bag, rack) {
-        tileBag = bag;
-        gameState[`p${currentPlayer}`].rack = rack;
-        currentPlayer = (currentPlayer === 1) ? 2 : 1;
-        updateUI();
-    }
+    function syncPass(bag, rack) { tileBag = bag; gameState[`p${currentPlayer}`].rack = rack; currentPlayer = (currentPlayer === 1) ? 2 : 1; updateUI(); }
 
     function scanForWord() {
         const rows = newTilesThisTurn.map(t => t.r), cols = newTilesThisTurn.map(t => t.c);
-        let word = "";
-        let minC = Math.min(...cols), maxC = Math.max(...cols), minR = Math.min(...rows), maxR = Math.max(...rows);
-        if (rows.every(r => r === rows[0])) {
-            for(let i = minC; i <= maxC; i++) word += document.getElementById(`cell-${rows[0]}-${i}`).innerText;
+        let word = ""; let r = rows[0], c = cols[0];
+        if (rows.every(row => row === r)) {
+            let minC = Math.min(...cols), maxC = Math.max(...cols);
+            for(let i = minC; i <= maxC; i++) word += document.getElementById(`cell-${r}-${i}`).innerText;
         } else {
-            for(let i = minR; i <= maxR; i++) word += document.getElementById(`cell-${i}-${cols[0]}`).innerText;
+            let minR = Math.min(...rows), maxR = Math.max(...rows);
+            for(let i = minR; i <= maxR; i++) word += document.getElementById(`cell-${i}-${c}`).innerText;
         }
         return word;
     }

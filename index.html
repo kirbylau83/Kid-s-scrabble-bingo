@@ -4,92 +4,85 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Logan's Scavenger Scrabble</title>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --cell-size: 45px; --p1-color: #3b82f6; --p2-color: #ef4444; }
-        body { font-family: 'Comic Sans MS', sans-serif; background: #fdfcf0; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; overscroll-behavior: none; }
+        body { font-family: 'Comic Sans MS', sans-serif; background: #fdfcf0; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overscroll-behavior: none; }
 
-        /* SELECTION SCREEN */
-        #selection-screen { position: fixed; top:0; left:0; width: 100%; height: 100%; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; z-index: 1000; overflow-y: auto; padding: 20px 0; }
+        /* LANDING PAGE */
+        #selection-screen { position: absolute; top:0; left:0; width: 100%; min-height: 100%; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; padding: 30px 0; z-index: 1000; overflow-y: auto; }
         .lobby-card { background: white; padding: 20px; border-radius: 20px; border: 3px solid #cbd5e1; width: 85%; max-width: 450px; text-align: center; margin-bottom: 20px; }
         .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
         .avatar-choice { font-size: 40px; background: white; border: 3px solid #cbd5e1; border-radius: 12px; cursor: pointer; text-align: center; padding: 5px; }
-        .selected-avatar { border-color: #3b82f6; background: #dbeafe; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
-        .room-code-display { font-size: 2.5rem; font-weight: bold; letter-spacing: 5px; color: #3b82f6; margin: 10px 0; background: #f1f5f9; padding: 10px; border-radius: 10px; }
-        
-        /* COPY LINK BUTTON */
-        .btn-copy { background: #6366f1; width: 100%; margin-top: 10px; padding: 10px; font-size: 0.9rem; }
+        .selected-avatar { border-color: #3b82f6; background: #dbeafe; }
 
         /* GAME UI */
-        #game-page { display: none; width: 100%; height: 100%; flex-direction: column; }
-        .mobile-top-bar { width: 100%; display: flex; flex-direction: column; align-items: center; background: white; border-bottom: 3px solid #cbd5e1; padding: 10px 0; }
+        #game-page { display: none; width: 100%; flex-direction: column; align-items: center; }
+        .mobile-top-bar { width: 100%; display: flex; flex-direction: column; align-items: center; background: white; border-bottom: 3px solid #cbd5e1; padding: 10px 0; position: sticky; top: 0; z-index: 500; }
         .turn-box { width: 90%; padding: 8px; border-radius: 12px; text-align: center; color: white; font-weight: bold; margin-bottom: 8px; }
         .bingo-mini-zone { display: flex; align-items: center; gap: 10px; background: #f1f5f9; padding: 8px; border-radius: 15px; border: 2px solid #cbd5e1; }
         .bingo-grid { display: grid; grid-template-columns: repeat(3, 45px); gap: 4px; }
         .bingo-cell { width: 45px; height: 45px; background: white; font-size: 22px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid #cbd5e1; }
-        .marked { background: #69f0ae !important; border: 2px solid #2e7d32 !important; }
+        .marked { background: #69f0ae !important; border: 2px solid #2e7d32 !important; box-shadow: 0 0 5px #69f0ae; }
 
+        /* THE BOARD */
         .board-container { width: 100%; overflow: auto; flex-grow: 1; padding: 20px; box-sizing: border-box; }
         .board { display: grid; grid-template-columns: repeat(13, var(--cell-size)); grid-template-rows: repeat(13, var(--cell-size)); gap: 2px; background: #5d4037; padding: 6px; border: 5px solid #3e2723; border-radius: 10px; }
-        .board-cell { width: var(--cell-size); height: var(--cell-size); background: #fffde7; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; border-radius: 4px; position: relative; }
+        .board-cell { width: var(--cell-size); height: var(--cell-size); background: #fffde7; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; position: relative; border-radius: 4px; }
+        .board-cell.start-square { background-color: #ff5252 !important; }
         .icon-square::after { content: attr(data-icon); position: absolute; font-size: 14px; bottom: 0; right: 0; opacity: 0.6; }
 
-        .bottom-dock { width: 100%; background: #efebe9; border-top: 4px solid #a1887f; padding: 10px 0; display: flex; flex-direction: column; align-items: center; }
+        /* BOTTOM DOCK */
+        .bottom-dock { width: 100%; background: #efebe9; border-top: 4px solid #a1887f; padding: 10px 0; position: sticky; bottom: 0; display: flex; flex-direction: column; align-items: center; }
         .rack-scroll { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 5px; height: 65px; }
         .tile { min-width: 45px; height: 55px; background: #ffe082; border: 3px solid #ff8f00; border-radius: 8px; line-height: 55px; font-size: 28px; font-weight: bold; margin: 0 4px; text-align: center; box-shadow: 0 4px 0 #ff8f00; }
         .tile.selected { background: #ffca28; transform: translateY(-5px); }
+        .tile.blank-tile { background: #81c784 !important; border-color: #2e7d32 !important; color: white; }
 
-        button { padding: 12px 10px; border: none; border-radius: 10px; color: white; font-weight: bold; font-size: 0.9rem; cursor: pointer; }
+        .btn-group { display: flex; gap: 8px; width: 95%; margin-top: 5px; }
+        button { flex: 1; padding: 12px 5px; border: none; border-radius: 10px; color: white; font-weight: bold; font-size: 0.9rem; }
         .btn-finish { background: #4caf50; }
         .btn-recall { background: #78909c; }
+        .btn-pass { background: #ff9800; }
+        .btn-bag { background: #5d4037; }
 
-        #chat-bubble { position: fixed; bottom: 180px; right: 20px; width: 50px; height: 50px; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; z-index: 2500; border: 3px solid white; }
-        #chat-window { position: fixed; bottom: 180px; right: 20px; width: 280px; height: 350px; background: white; border: 3px solid #3b82f6; border-radius: 20px; display: none; flex-direction: column; z-index: 2600; overflow: hidden;}
-        #chat-history { flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background: #f8fafc; }
-        .chat-msg { padding: 8px 12px; border-radius: 15px; max-width: 80%; font-size: 0.9rem; }
-        .msg-me { align-self: flex-end; background: #3b82f6; color: white; }
-        .msg-them { align-self: flex-start; background: #e2e8f0; color: #1e293b; }
+        #bag-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; height: 50%; background: white; z-index: 2000; border-radius: 20px 20px 0 0; transition: 0.4s; padding: 20px; box-sizing: border-box; box-shadow: 0 -10px 30px rgba(0,0,0,0.3); overflow-y: auto; }
+        #bag-drawer.open { bottom: 0; }
+        .bag-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 
-        .hidden { display: none !important; }
-        .footer { font-size: 0.8rem; color: #64748b; margin-top: 20px; text-align: center; padding: 0 20px; font-style: italic; }
-        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 3000; }
+        .rules-section { width: 90%; max-width: 400px; background: white; padding: 15px; border-radius: 15px; border: 2px solid #cbd5e1; margin-top: 10px; font-size: 0.85rem; }
+        .footer { text-align: center; font-size: 0.85rem; color: #64748b; margin-top: 20px; padding: 0 20px; line-height: 1.4; font-style: italic; max-width: 400px; }
+        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 3000; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="selection-screen">
-        <h1 style="color:#5d4037;">Logan's Scavenger Scrabble</h1>
+        <h1 style="color:#5d4037; margin-bottom:10px;">Logan's Scavenger Scrabble</h1>
         
         <div class="lobby-card">
-            <input type="text" id="player-name-input" placeholder="Your Name" style="padding:12px; width:80%; border-radius:10px; border:2px solid #cbd5e1; text-align:center;">
+            <input type="text" id="p-name" placeholder="Enter Name" style="padding:12px; width:80%; border-radius:10px; border:2px solid #cbd5e1; text-align:center; font-size:1.1rem;">
+            <p id="setup-msg" style="margin: 10px 0; font-weight:bold; color:#64748b;">Player 1: Pick an Animal</p>
             <div class="avatar-grid">
-                <div class="avatar-choice" onclick="pickAvatar(this, '🐼')">🐼</div>
-                <div class="avatar-choice" onclick="pickAvatar(this, '🐯')">🐯</div>
-                <div class="avatar-choice" onclick="pickAvatar(this, '🦁')">🦁</div>
-                <div class="avatar-choice" onclick="pickAvatar(this, '🐘')">🐘</div>
-                <div class="avatar-choice" onclick="pickAvatar(this, '🐰')">🐰</div>
-                <div class="avatar-choice" onclick="pickAvatar(this, '🦊')">🦊</div>
-                <div class="avatar-choice" onclick="pickAvatar(this, '🐸')">🐸</div>
-                <div class="avatar-choice" onclick="pickAvatar(this, '🐵')">🐵</div>
-                <div class="avatar-choice" onclick="pickAvatar(this, '🐧')">🐧</div>
-                <div class="avatar-choice" onclick="pickAvatar(this, '🦉')">🦉</div>
-                <div class="avatar-choice" onclick="pickAvatar(this, '🦄')">🦄</div>
-                <div class="avatar-choice" onclick="pickAvatar(this, '🐝')">🐝</div>
+                <div class="avatar-choice" onclick="selectAvatar('🐼')">🐼</div>
+                <div class="avatar-choice" onclick="selectAvatar('🐯')">🐯</div>
+                <div class="avatar-choice" onclick="selectAvatar('🦁')">🦁</div>
+                <div class="avatar-choice" onclick="selectAvatar('🐘')">🐘</div>
+                <div class="avatar-choice" onclick="selectAvatar('🐰')">🐰</div>
+                <div class="avatar-choice" onclick="selectAvatar('🦊')">🦊</div>
+                <div class="avatar-choice" onclick="selectAvatar('🐸')">🐸</div>
+                <div class="avatar-choice" onclick="selectAvatar('🐵')">🐵</div>
+                <div class="avatar-choice" onclick="selectAvatar('🐧')">🐧</div>
+                <div class="avatar-choice" onclick="selectAvatar('🦉')">🦉</div>
+                <div class="avatar-choice" onclick="selectAvatar('🦄')">🦄</div>
+                <div class="avatar-choice" onclick="selectAvatar('🐝')">🐝</div>
             </div>
         </div>
 
-        <div class="lobby-card" id="main-lobby-buttons">
-            <button id="btn-host" onclick="startHosting()" style="background:#3b82f6; width:100%; margin-bottom:10px;">Create New Game</button>
-            <div style="margin: 5px 0;">- OR -</div>
-            <input type="text" id="join-code-input" placeholder="Room Code" style="padding:10px; width:100px; border-radius:10px; border:2px solid #cbd5e1; text-align:center;">
-            <button onclick="joinGame()" style="background:#4caf50;">Join</button>
-        </div>
-
-        <div id="host-info" class="lobby-card hidden">
-            <p>Tell your friend this code:</p>
-            <div id="room-code-display" class="room-code-display">....</div>
-            <button class="btn-copy" onclick="copyInviteLink()">🔗 Copy Invite Link</button>
-            <div style="margin-top:15px; color: #3b82f6; font-weight:bold;">Waiting for them...</div>
+        <div class="rules-section">
+            <h4 style="margin:0 0 5px 0; text-align:center;">📖 Rules:</h4>
+            • Touch the **RED** square first!<br>
+            • Land on a picture to mark your card.<br>
+            • Get 3 in a row to win **BINGO!**
         </div>
 
         <div class="footer">
@@ -99,259 +92,187 @@
 
     <div id="game-page">
         <div class="mobile-top-bar">
-            <div id="turn-box" class="turn-box">Connecting...</div>
+            <div id="turn-box" class="turn-box">Turn</div>
             <div class="bingo-mini-zone">
                 <div id="active-avatar" style="font-size:40px;"></div>
                 <div id="active-bingo" class="bingo-grid"></div>
             </div>
         </div>
-        <div class="board-container"><div id="board" class="board"></div></div>
-        
-        <div id="chat-bubble" onclick="toggleChat()">💬</div>
-        <div id="chat-window">
-            <div id="chat-history"></div>
-            <div style="display:flex; padding:10px; border-top:1px solid #ddd;">
-                <input type="text" id="chat-input" placeholder="Hi!" style="flex:1; border-radius:10px; border:1px solid #ccc; padding:5px;">
-                <button onclick="sendChat()" style="background:#3b82f6; margin-left:5px;">Send</button>
-            </div>
+
+        <div class="board-container">
+            <div id="board" class="board"></div>
         </div>
 
         <div class="bottom-dock">
-            <div class="rack-scroll"><div id="current-rack"></div></div>
-            <div style="display:flex; gap:8px; width:95%; margin-top:5px;">
+            <div class="rack-scroll">
+                <div id="current-rack" style="display:flex;"></div>
+            </div>
+            <div class="btn-group">
                 <button class="btn-recall" onclick="recallTiles()">Recall</button>
+                <button class="btn-bag" onclick="toggleBag()">Bag</button>
+                <button class="btn-pass" onclick="passTurn()">Pass</button>
                 <button class="btn-finish" onclick="finishTurn()">Finish</button>
             </div>
+            <button onclick="location.reload()" style="background:none; color:#64748b; font-size:0.7rem; margin-top:5px; padding:0;">Quit Game</button>
         </div>
+    </div>
+
+    <div id="bag-drawer">
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:15px;">
+            <strong>Letters Left:</strong>
+            <button onclick="toggleBag()" style="background:#78909c; flex:none; padding:5px 15px;">Close</button>
+        </div>
+        <div id="bag-display" class="bag-grid"></div>
     </div>
 
     <div id="win-overlay">
         <h1 id="win-message"></h1>
-        <button onclick="location.reload()" style="background:#4caf50; padding: 20px 40px;">Main Menu</button>
+        <button onclick="location.reload()" style="background:#4caf50; padding: 20px 40px;">Play Again</button>
     </div>
 
 <script>
-    const APP_PREFIX = "LOGAN-SCRABBLE-";
-    let peer, conn, isHost = false;
-    let myProfile = { name: "Player", avatar: "🐼" };
-    let opponentProfile = { name: "Friend", avatar: "❓" };
+    const icons = ['🍎', '🚀', '🦁', '🍕', '💎', '🌈', '🎸', '🍦', '🎈'];
+    const tileDistribution = {'E': 12, 'A': 9, 'I': 9, 'O': 8, 'N': 6, 'R': 6, 'T': 6, 'D': 4, 'L': 4, 'S': 4, 'U': 4, 'G': 3, 'B': 2, 'C': 2, 'M': 2, 'P': 2, 'F': 2, 'H': 2, 'V': 2, 'W': 2, 'Y': 2, '?': 2, 'K': 1, 'J': 1, 'X': 1, 'Q': 1, 'Z': 1};
 
-    // --- AUTO-FILL ROOM CODE FROM URL ---
-    window.onload = () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const room = urlParams.get('room');
-        if (room) {
-            document.getElementById('join-code-input').value = room;
-            alert("Invite Code Loaded! Enter your name and click Join.");
+    let players = { p1: { name: "", avatar: "" }, p2: { name: "", avatar: "" } };
+    let tileBag = [], currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
+    let boardIsFresh = true, gameState = { p1: { rack: [], bingo: [], marks: new Array(9).fill(false) }, p2: { rack: [], bingo: [], marks: new Array(9).fill(false) } };
+
+    function selectAvatar(emoji) {
+        const nameInput = document.getElementById('p-name');
+        if (!players.p1.avatar) {
+            players.p1.avatar = emoji; players.p1.name = nameInput.value || "Player 1";
+            nameInput.value = ""; document.getElementById('setup-msg').innerText = "Player 2: Pick an Animal";
+            event.target.style.opacity = "0.2";
+        } else {
+            players.p2.avatar = emoji; players.p2.name = nameInput.value || "Player 2";
+            document.getElementById('selection-screen').style.display = 'none';
+            document.getElementById('game-page').style.display = 'flex';
+            init();
         }
-    };
-
-    function pickAvatar(el, emo) {
-        document.querySelectorAll('.avatar-choice').forEach(a => a.classList.remove('selected-avatar'));
-        el.classList.add('selected-avatar');
-        myProfile.avatar = emo;
     }
 
-    function startHosting() {
-        myProfile.name = document.getElementById('player-name-input').value || "Player 1";
-        isHost = true;
-        const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
-        
-        peer = new Peer(APP_PREFIX + roomCode);
-        peer.on('open', (id) => {
-            document.getElementById('room-code-display').innerText = roomCode;
-            document.getElementById('host-info').classList.remove('hidden');
-            document.getElementById('main-lobby-buttons').classList.add('hidden');
-        });
-
-        peer.on('connection', (c) => { conn = c; setupConnEvents(); });
-        peer.on('error', (err) => { alert("Error connecting. Refreshing."); location.reload(); });
-    }
-
-    function copyInviteLink() {
-        const code = document.getElementById('room-code-display').innerText;
-        // Construct link like yourpage.html?room=1234
-        const baseUrl = window.location.href.split('?')[0];
-        const inviteUrl = `${baseUrl}?room=${code}`;
-        
-        navigator.clipboard.writeText(inviteUrl).then(() => {
-            alert("Invite Link Copied! Text it to your friend.");
-        });
-    }
-
-    function joinGame() {
-        myProfile.name = document.getElementById('player-name-input').value || "Player 2";
-        const code = document.getElementById('join-code-input').value.trim();
-        if (!code) return alert("Enter the 4-digit code!");
-
-        peer = new Peer();
-        peer.on('open', () => {
-            conn = peer.connect(APP_PREFIX + code);
-            setupConnEvents();
-        });
-        peer.on('error', () => alert("Room not found!"));
-    }
-
-    function setupConnEvents() {
-        conn.on('open', () => conn.send({ type: 'profile', profile: myProfile }));
-        conn.on('data', (data) => {
-            if (data.type === 'profile') {
-                opponentProfile = data.profile;
-                if (isHost) {
-                    initGame();
-                    conn.send({ type: 'init', state: { tileBag, iconMap, gameState } });
-                    launchGame();
-                }
-            }
-            if (data.type === 'init') {
-                tileBag = data.state.tileBag; iconMap = data.state.iconMap; gameState = data.state.gameState;
-                launchGame();
-            }
-            if (data.type === 'place') remotePlace(data.r, data.c, data.letter, data.wasBlank);
-            if (data.type === 'recall') remoteRecall(data.tiles);
-            if (data.type === 'finish') syncTurn(data.newTiles, data.newBag, data.newRack, data.newMarks);
-            if (data.type === 'chat') receiveChat(data.msg);
-        });
-    }
-
-    function launchGame() {
-        document.getElementById('selection-screen').style.display = 'none';
-        document.getElementById('game-page').style.display = 'flex';
-        createBoardGrid();
+    function init() {
+        for (let l in tileDistribution) { for (let i = 0; i < tileDistribution[l]; i++) tileBag.push(l); }
+        shuffle(tileBag);
+        generateIconMap();
+        createBoard();
+        for(let p of ['p1', 'p2']) {
+            while(gameState[p].rack.length < 7) gameState[p].rack.push(tileBag.pop());
+            gameState[p].bingo = Array.from({length: 9}, () => icons[Math.floor(Math.random()*9)]);
+        }
         updateUI();
     }
 
-    // --- SHARED GAME LOGIC ---
-    const icons = ['🍎', '🚀', '🦁', '🍕', '💎', '🌈', '🎸', '🍦', '🎈'];
-    const tileDistribution = {'E': 12, 'A': 9, 'I': 9, 'O': 8, 'N': 6, 'R': 6, 'T': 6, 'D': 4, 'L': 4, 'S': 4, 'U': 4, 'G': 3, 'B': 2, 'C': 2, 'M': 2, 'P': 2, 'F': 2, 'H': 2, 'V': 2, 'W': 2, 'Y': 2, '?': 2, 'K': 1, 'J': 1, 'X': 1, 'Q': 1, 'Z': 1};
-    let tileBag = [], currentPlayer = 1, selectedTileIndex = null, iconMap = {}, newTilesThisTurn = [];
-    let gameState = { p1: { rack: [], bingo: [], marks: new Array(9).fill(false) }, p2: { rack: [], bingo: [], marks: new Array(9).fill(false) } };
+    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
 
-    function initGame() {
-        for (let l in tileDistribution) { for (let i = 0; i < tileDistribution[l]; i++) tileBag.push(l); }
-        for (let i = tileBag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [tileBag[i], tileBag[j]] = [tileBag[j], tileBag[i]]; }
+    function generateIconMap() {
         let spots = new Set();
         while(spots.size < 50) { let s = Math.floor(Math.random() * 169); if(s !== 84) spots.add(s); }
         spots.forEach(s => iconMap[`${Math.floor(s/13)}-${s%13}`] = icons[Math.floor(Math.random()*9)]);
-        for(let p of ['p1', 'p2']) {
-            for(let i=0; i<7; i++) gameState[p].rack.push(tileBag.pop());
-            gameState[p].bingo = Array.from({length: 9}, () => icons[Math.floor(Math.random()*9)]);
-        }
     }
 
-    function createBoardGrid() {
+    function createBoard() {
         const board = document.getElementById('board');
-        board.innerHTML = '';
         for(let r=0; r<13; r++) {
             for(let c=0; c<13; c++) {
                 const cell = document.createElement('div'); cell.className = 'board-cell';
                 if(r === 6 && c === 6) cell.classList.add('start-square');
                 if(iconMap[`${r}-${c}`]) { cell.classList.add('icon-square'); cell.setAttribute('data-icon', iconMap[`${r}-${c}`]); }
-                cell.onclick = () => placeTile(r, c); cell.id = `cell-${r}-${c}`;
-                board.appendChild(cell);
+                cell.onclick = () => placeTile(r, c); cell.id = `cell-${r}-${c}`; board.appendChild(cell);
             }
         }
     }
 
     function updateUI() {
-        const myID = isHost ? 1 : 2;
-        const pData = (currentPlayer === 1) ? (isHost ? myProfile : opponentProfile) : (isHost ? opponentProfile : myProfile);
+        const pKey = `p${currentPlayer}`;
+        const pData = players[pKey];
         const turnBox = document.getElementById('turn-box');
-        turnBox.innerText = (currentPlayer === myID) ? "YOUR TURN!" : `${pData.name}'s Turn`;
+        turnBox.innerText = `${pData.name}'s Turn`;
         turnBox.style.background = (currentPlayer === 1) ? "var(--p1-color)" : "var(--p2-color)";
         document.getElementById('active-avatar').innerText = pData.avatar;
+        
         const g = document.getElementById('active-bingo'); g.innerHTML = '';
-        gameState[`p${currentPlayer}`].bingo.forEach((icon, i) => {
-            const c = document.createElement('div'); c.className = 'bingo-cell' + (gameState[`p${currentPlayer}`].marks[i] ? ' marked' : '');
+        gameState[pKey].bingo.forEach((icon, i) => {
+            const c = document.createElement('div'); c.className = 'bingo-cell' + (gameState[pKey].marks[i] ? ' marked' : '');
             c.innerText = icon; g.appendChild(c);
+        });
+
+        const d = document.getElementById('bag-display');
+        const counts = {}; tileBag.forEach(l => counts[l] = (counts[l] || 0) + 1);
+        d.innerHTML = '';
+        Object.keys(tileDistribution).sort().forEach(l => {
+            if (counts[l] > 0) {
+                let item = document.createElement('div'); item.innerHTML = `${l === '?' ? '♻️' : l}:${counts[l]}`;
+                d.appendChild(item);
+            }
         });
         renderRack();
     }
 
     function renderRack() {
-        const myID = isHost ? 1 : 2;
         const rD = document.getElementById('current-rack'); rD.innerHTML = '';
-        gameState[`p${myID}`].rack.forEach((l, i) => {
-            const t = document.createElement('div'); 
-            t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '') + (l === '?' ? ' blank-tile' : '');
+        gameState[`p${currentPlayer}`].rack.forEach((l, i) => {
+            const t = document.createElement('div'); t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '') + (l === '?' ? ' blank-tile' : '');
             t.innerText = l === '?' ? "" : l;
-            t.onclick = () => { if(currentPlayer === myID) { selectedTileIndex = i; renderRack(); } };
-            rD.appendChild(t);
+            t.onclick = () => { if(gameActive) { selectedTileIndex = i; renderRack(); } }; rD.appendChild(t);
         });
     }
 
+    function toggleBag() { document.getElementById('bag-drawer').classList.toggle('open'); }
+
     function placeTile(r, c) {
-        const myID = isHost ? 1 : 2;
-        if(currentPlayer !== myID) return;
         const cell = document.getElementById(`cell-${r}-${c}`);
         if (selectedTileIndex !== null && cell.innerText === "") {
-            let letter = gameState[`p${myID}`].rack[selectedTileIndex];
-            let wasBlank = (letter === '?');
-            if(wasBlank) { letter = prompt("Letter?").toUpperCase(); if(!letter) return; }
-            cell.innerText = letter; cell.style.color = "#2563eb"; if(wasBlank) cell.style.backgroundColor = "#dcfce7";
-            newTilesThisTurn.push({r, c, letter, wasBlank});
-            gameState[`p${myID}`].rack.splice(selectedTileIndex, 1);
-            conn.send({ type: 'place', r, c, letter, wasBlank });
+            let letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
+            if(letter === '?') { letter = prompt("What letter?").toUpperCase(); if(!letter) return; }
+            cell.innerText = letter; cell.style.color = "#2563eb"; 
+            newTilesThisTurn.push({r, c, letter, wasBlank: (gameState[`p${currentPlayer}`].rack[selectedTileIndex] === '?')});
+            gameState[`p${currentPlayer}`].rack.splice(selectedTileIndex, 1);
             selectedTileIndex = null; renderRack();
         }
     }
 
-    function remotePlace(r, c, letter, wasBlank) {
-        const cell = document.getElementById(`cell-${r}-${c}`);
-        cell.innerText = letter; cell.style.color = "#2563eb"; if(wasBlank) cell.style.backgroundColor = "#dcfce7";
-    }
-
     function recallTiles() {
-        const myID = isHost ? 1 : 2;
         newTilesThisTurn.forEach(t => {
-            document.getElementById(`cell-${t.r}-${t.c}`).innerText = "";
-            document.getElementById(`cell-${t.r}-${t.c}`).style.backgroundColor = "";
-            gameState[`p${myID}`].rack.push(t.wasBlank ? '?' : t.letter);
+            const cell = document.getElementById(`cell-${t.r}-${t.c}`);
+            cell.innerText = ""; cell.style.color = "";
+            gameState[`p${currentPlayer}`].rack.push(t.wasBlank ? '?' : t.letter);
         });
-        conn.send({ type: 'recall', tiles: newTilesThisTurn });
-        newTilesThisTurn = []; renderRack();
+        newTilesThisTurn = []; selectedTileIndex = null; renderRack();
     }
 
-    function remoteRecall(tiles) { tiles.forEach(t => { document.getElementById(`cell-${t.r}-${t.c}`).innerText = ""; }); }
+    function passTurn() {
+        if(confirm("Pass and get 7 new letters?")) {
+            recallTiles(); tileBag.push(...gameState[`p${currentPlayer}`].rack); shuffle(tileBag);
+            gameState[`p${currentPlayer}`].rack = []; while(gameState[`p${currentPlayer}`].rack.length < 7 && tileBag.length > 0) gameState[`p${currentPlayer}`].rack.push(tileBag.pop());
+            switchTurn();
+        }
+    }
 
-    function finishTurn() {
+    async function finishTurn() {
         if(newTilesThisTurn.length === 0) return;
         newTilesThisTurn.forEach(t => {
             const icon = iconMap[`${t.r}-${t.c}`];
             if(icon) gameState[`p${currentPlayer}`].bingo.forEach((item, i) => { if(item === icon) gameState[`p${currentPlayer}`].marks[i] = true; });
             document.getElementById(`cell-${t.r}-${t.c}`).style.color = "black";
         });
-        const oldTiles = [...newTilesThisTurn]; newTilesThisTurn = [];
+        newTilesThisTurn = []; boardIsFresh = false;
         while(gameState[`p${currentPlayer}`].rack.length < 7 && tileBag.length > 0) gameState[`p${currentPlayer}`].rack.push(tileBag.pop());
-        conn.send({ type: 'finish', newTiles: oldTiles, newBag: tileBag, newRack: gameState[`p${currentPlayer}`].rack, newMarks: gameState[`p${currentPlayer}`].marks });
-        checkWinner(); currentPlayer = (currentPlayer === 1) ? 2 : 1; updateUI();
+        checkWin(); switchTurn();
     }
 
-    function syncTurn(tiles, bag, rack, marks) {
-        tiles.forEach(t => document.getElementById(`cell-${t.r}-${t.c}`).style.color = "black");
-        tileBag = bag; gameState[`p${currentPlayer}`].rack = rack; gameState[`p${currentPlayer}`].marks = marks;
-        checkWinner(); currentPlayer = (currentPlayer === 1) ? 2 : 1; updateUI();
-    }
-
-    function toggleChat() { const win = document.getElementById('chat-window'); win.style.display = (win.style.display === 'flex') ? 'none' : 'flex'; }
-    function sendChat() {
-        const input = document.getElementById('chat-input'); if(!input.value) return;
-        const div = document.createElement('div'); div.className = 'chat-msg msg-me'; div.innerText = input.value;
-        document.getElementById('chat-history').appendChild(div);
-        conn.send({ type: 'chat', msg: input.value }); input.value = '';
-    }
-    function receiveChat(msg) {
-        const div = document.createElement('div'); div.className = 'chat-msg msg-them'; div.innerText = msg;
-        document.getElementById('chat-history').appendChild(div);
-    }
-    function checkWinner() {
+    function checkWin() {
+        const marks = gameState[`p${currentPlayer}`].marks;
         const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-        if(wins.some(w => w.every(i => gameState[`p${currentPlayer}`].marks[i]))) {
-            const p = (currentPlayer === 1) ? (isHost ? myProfile : opponentProfile) : (isHost ? opponentProfile : myProfile);
-            document.getElementById('win-message').innerText = `${p.avatar} ${p.name} WINS!`;
-            document.getElementById('win-overlay').style.display = 'flex';
+        if(wins.some(w => w.every(i => marks[i]))) {
+            gameActive = false; const p = players[`p${currentPlayer}`];
+            document.getElementById('win-message').innerText = `${p.avatar} ${p.name} BINGO WINS!`;
+            document.getElementById('win-overlay').style.display='flex';
         }
     }
+
+    function switchTurn() { currentPlayer = currentPlayer === 1 ? 2 : 1; updateUI(); }
 </script>
 </body>
 </html>

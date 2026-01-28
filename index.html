@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Scavenger Scrabble: 3x3 Bingo & Tile Bag</title>
+    <title>Scavenger Scrabble: 3x3 Bingo Edition</title>
     <style>
         :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
         body { font-family: 'Comic Sans MS', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
@@ -13,23 +13,21 @@
 
         .main-layout { display: flex; gap: 30px; align-items: flex-start; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
         
-        /* Board Styles */
         .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; border-radius: 8px; }
         .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.2rem; }
         .board-cell.start-square { background-color: #ff4d4d !important; border: 2px solid #b30000 !important; }
         .icon-square::after { content: attr(data-icon); position: absolute; font-size: 14px; bottom: 0; right: 0; opacity: 0.6; }
 
-        /* Sidebar: Bingo & Tile Bag */
         .sidebar { display: flex; flex-direction: column; gap: 20px; min-width: 250px; }
         
-        .bingo-grid { display: grid; grid-template-columns: repeat(3, 70px); gap: 8px; background: #cbd5e1; padding: 12px; border-radius: 10px; }
-        .bingo-cell { width: 70px; height: 70px; background: white; font-size: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
-        .marked { background: #4ade80 !important; box-shadow: 0 0 15px #4ade80; }
+        /* Revised 3x3 Bingo Grid */
+        .bingo-grid { display: grid; grid-template-columns: repeat(3, 80px); gap: 10px; background: #cbd5e1; padding: 15px; border-radius: 10px; }
+        .bingo-cell { width: 80px; height: 80px; background: white; font-size: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+        .marked { background: #4ade80 !important; box-shadow: 0 0 15px #4ade80; border: 2px solid #166534; }
 
-        .bag-counter { background: white; padding: 15px; border-radius: 10px; border: 2px solid #cbd5e1; font-size: 0.9rem; max-height: 300px; overflow-y: auto; }
-        .bag-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: left; }
+        .bag-counter { background: white; padding: 15px; border-radius: 10px; border: 2px solid #cbd5e1; font-size: 0.8rem; }
+        .bag-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 
-        /* Bottom UI */
         .rack-container { margin: 20px; padding: 15px; background: #e2e8f0; border-radius: 10px; width: 600px; text-align: center; border: 2px dashed #94a3b8; }
         .tile { display: inline-block; width: 45px; height: 50px; background: #fef3c7; border: 2px solid #d97706; border-radius: 5px; line-height: 50px; font-size: 28px; font-weight: bold; margin: 5px; cursor: pointer; }
         .tile.selected { background: #fbbf24; transform: translateY(-8px); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
@@ -60,8 +58,8 @@
         <div id="board" class="board"></div>
         
         <div class="sidebar">
-            <div id="p1-bingo-zone"><h3>Player 1 Bingo (3x3)</h3><div id="p1-bingo" class="bingo-grid"></div></div>
-            <div id="p2-bingo-zone" class="hidden"><h3>Player 2 Bingo (3x3)</h3><div id="p2-bingo" class="bingo-grid"></div></div>
+            <div id="p1-bingo-zone"><h3>P1 Bingo (3x3)</h3><div id="p1-bingo" class="bingo-grid"></div></div>
+            <div id="p2-bingo-zone" class="hidden"><h3>P2 Bingo (3x3)</h3><div id="p2-bingo" class="bingo-grid"></div></div>
             
             <div class="bag-counter">
                 <strong>Remaining in Bag:</strong>
@@ -83,8 +81,6 @@
 <script>
     const icons = ['🍎', '🚀', '🦁', '🍕', '💎', '🌈', '🎸', '🍦', '🎈'];
     const vowels = "AEIOU";
-    
-    // Distribution counts for 100 tiles
     const tileDistribution = {
         'E': 12, 'A': 9, 'I': 9, 'O': 8, 'N': 6, 'R': 6, 'T': 6,
         'D': 4, 'L': 4, 'S': 4, 'U': 4, 'G': 3, 'B': 2, 'C': 2,
@@ -92,67 +88,43 @@
         '?': 2, 'K': 1, 'J': 1, 'X': 1, 'Q': 1, 'Z': 1
     };
 
-    let tileBag = [];
-    let currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
-    let boardIsFresh = true;
-    let gameState = { p1: { rack: [], bingo: [] }, p2: { rack: [], bingo: [] } };
+    let tileBag = [], currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
+    let boardIsFresh = true, gameState = { p1: { rack: [], bingo: [] }, p2: { rack: [], bingo: [] } };
 
     function init() {
-        // Build the bag from distribution
-        for (let letter in tileDistribution) {
-            for (let i = 0; i < tileDistribution[letter]; i++) tileBag.push(letter);
-        }
+        for (let l in tileDistribution) { for (let i = 0; i < tileDistribution[l]; i++) tileBag.push(l); }
         shuffle(tileBag);
-
         generateIconMap();
         createBoard();
-        
         for(let p of ['p1', 'p2']) {
             gameState[p].rack = drawBalanced(7);
             gameState[p].bingo = Array.from({length: 9}, () => icons[Math.floor(Math.random()*9)]);
         }
-        
-        updateBagDisplay();
-        renderBingo(1); renderBingo(2); renderRack();
+        updateBagDisplay(); renderBingo(1); renderBingo(2); renderRack();
     }
 
-    function shuffle(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[array.length - 1]] = [array[array.length - 1], array[i]];
-        }
-    }
+    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
 
     function drawBalanced(count, existing = []) {
         let hand = [...existing];
-        while(hand.length < count && tileBag.length > 0) {
-            hand.push(tileBag.pop());
-        }
-        
-        // Vowel guard: if hand has < 2 vowels, swap non-vowels for vowels from the bag if possible
+        while(hand.length < count && tileBag.length > 0) hand.push(tileBag.pop());
         let vCount = hand.filter(l => vowels.includes(l)).length;
         if(vCount < 2 && hand.length >= 2) {
             for(let i=0; i < hand.length && vCount < 2; i++) {
                 if(!vowels.includes(hand[i]) && hand[i] !== '?') {
-                    // Look for a vowel in the bag to swap
-                    let vowelIdx = tileBag.findIndex(l => vowels.includes(l));
-                    if(vowelIdx !== -1) {
-                        let oldTile = hand[i];
-                        hand[i] = tileBag.splice(vowelIdx, 1)[0];
-                        tileBag.push(oldTile);
-                        shuffle(tileBag);
-                        vCount++;
+                    let vIdx = tileBag.findIndex(l => vowels.includes(l));
+                    if(vIdx !== -1) {
+                        let old = hand[i]; hand[i] = tileBag.splice(vIdx, 1)[0]; tileBag.push(old); shuffle(tileBag); vCount++;
                     }
                 }
             }
         }
-        updateBagDisplay();
-        return hand;
+        updateBagDisplay(); return hand;
     }
 
     function generateIconMap() {
         let spots = new Set();
-        while(spots.size < 40) { // Increased to 40
+        while(spots.size < 50) { // Increased to 50
             let s = Math.floor(Math.random() * 225);
             if(s !== 112) spots.add(s); 
         }
@@ -166,10 +138,7 @@
                 const cell = document.createElement('div');
                 cell.className = 'board-cell';
                 if(r === 7 && c === 7) cell.classList.add('start-square');
-                if(iconMap[`${r}-${c}`]) {
-                    cell.classList.add('icon-square');
-                    cell.setAttribute('data-icon', iconMap[`${r}-${c}`]);
-                }
+                if(iconMap[`${r}-${c}`]) { cell.classList.add('icon-square'); cell.setAttribute('data-icon', iconMap[`${r}-${c}`]); }
                 cell.onclick = () => placeTile(r, c);
                 cell.id = `cell-${r}-${c}`;
                 board.appendChild(cell);
@@ -178,28 +147,24 @@
     }
 
     function updateBagDisplay() {
-        const display = document.getElementById('bag-display');
-        const counts = {};
-        tileBag.forEach(l => counts[l] = (counts[l] || 0) + 1);
-        
-        display.innerHTML = '';
+        const d = document.getElementById('bag-display');
+        const c = {}; tileBag.forEach(l => c[l] = (c[l] || 0) + 1);
+        d.innerHTML = '';
         Object.keys(tileDistribution).sort().forEach(l => {
             let item = document.createElement('div');
-            item.innerHTML = `${l === '?' ? '♻️' : l}: <strong>${counts[l] || 0}</strong>`;
-            display.appendChild(item);
+            item.innerHTML = `${l === '?' ? '♻️' : l}:${c[l] || 0}`;
+            d.appendChild(item);
         });
     }
 
     function renderRack() {
-        const rackDiv = document.getElementById('current-rack');
-        rackDiv.innerHTML = '';
-        gameState[`p${currentPlayer}`].rack.forEach((letter, i) => {
+        const rD = document.getElementById('current-rack'); rD.innerHTML = '';
+        gameState[`p${currentPlayer}`].rack.forEach((l, i) => {
             const t = document.createElement('div');
             t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '');
-            if (letter === '?') { t.classList.add('blank-tile'); t.innerText = ""; }
-            else { t.innerText = letter; }
+            if (l === '?') { t.classList.add('blank-tile'); t.innerText = ""; } else { t.innerText = l; }
             t.onclick = () => { if(gameActive) { selectedTileIndex = i; renderRack(); } };
-            rackDiv.appendChild(t);
+            rD.appendChild(t);
         });
     }
 
@@ -208,57 +173,47 @@
         const cell = document.getElementById(`cell-${r}-${c}`);
         if (selectedTileIndex !== null && cell.innerText === "") {
             let letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
-            let isBlank = letter === '?';
-            if(isBlank) {
-                let choice = prompt("What letter should this blank be?").toUpperCase();
-                if(choice && choice.length === 1 && /[A-Z]/.test(choice)) letter = choice;
-                else return;
+            let isB = letter === '?';
+            if(isB) {
+                let ch = prompt("Blank tile letter?").toUpperCase();
+                if(ch && ch.length === 1 && /[A-Z]/.test(ch)) letter = ch; else return;
             }
-            cell.innerText = letter;
-            cell.style.color = "#2563eb"; 
-            if(isBlank) cell.style.backgroundColor = "#dcfce7";
-            newTilesThisTurn.push({r, c, letter, wasBlank: isBlank});
+            cell.innerText = letter; cell.style.color = "#2563eb"; 
+            if(isB) cell.style.backgroundColor = "#dcfce7";
+            newTilesThisTurn.push({r, c, letter, wasBlank: isB});
             gameState[`p${currentPlayer}`].rack.splice(selectedTileIndex, 1);
-            selectedTileIndex = null;
-            renderRack();
+            selectedTileIndex = null; renderRack();
         }
     }
 
     function recallTiles() {
-        newTilesThisTurn.forEach(tile => {
-            const cell = document.getElementById(`cell-${tile.r}-${tile.c}`);
+        newTilesThisTurn.forEach(t => {
+            const cell = document.getElementById(`cell-${t.r}-${t.c}`);
             cell.innerText = ""; cell.style.color = ""; cell.style.backgroundColor = "";
-            gameState[`p${currentPlayer}`].rack.push(tile.wasBlank ? '?' : tile.letter);
+            gameState[`p${currentPlayer}`].rack.push(t.wasBlank ? '?' : t.letter);
         });
         newTilesThisTurn = []; selectedTileIndex = null; renderRack();
     }
 
     function passTurn() {
-        if(confirm("Pass? Discard hand and draw 7 new.")) {
-            recallTiles();
-            // Put current hand back in bag and shuffle
-            tileBag.push(...gameState[`p${currentPlayer}`].rack);
-            shuffle(tileBag);
-            gameState[`p${currentPlayer}`].rack = drawBalanced(7);
-            switchTurn();
+        if(confirm("Pass and get 7 new tiles?")) {
+            recallTiles(); tileBag.push(...gameState[`p${currentPlayer}`].rack); shuffle(tileBag);
+            gameState[`p${currentPlayer}`].rack = drawBalanced(7); switchTurn();
         }
     }
 
     async function finishTurn() {
         if(newTilesThisTurn.length === 0) return;
-        let isConnected = boardIsFresh ? newTilesThisTurn.some(t => t.r === 7 && t.c === 7) : 
+        let isC = boardIsFresh ? newTilesThisTurn.some(t => t.r === 7 && t.c === 7) : 
             newTilesThisTurn.some(t => {
                 return [[-1,0],[1,0],[0,-1],[0,1]].some(([dr, dc]) => {
                     let n = document.getElementById(`cell-${t.r+dr}-${t.c+dc}`);
                     return n && n.innerText !== "" && n.style.color === "rgb(0, 0, 0)";
                 });
             });
-
-        if(!isConnected) { alert(boardIsFresh ? "Start at the red square!" : "Must connect to a black tile!"); return; }
-
+        if(!isC) { alert(boardIsFresh ? "Start at red!" : "Connect to a black tile!"); return; }
         const word = scanForWord();
         if(!word) { alert("Straight lines only!"); return; }
-
         if (await verifyWithAPI(word)) {
             newTilesThisTurn.forEach(t => {
                 if(iconMap[`${t.r}-${t.c}`]) markBingoCard(iconMap[`${t.r}-${t.c}`]);
@@ -302,14 +257,9 @@
     }
 
     function checkBingoWin() {
-        const grid = Array.from({length: 9}, (_, i) => document.getElementById(`p${currentPlayer}-bingo-${i}`).classList.contains('marked'));
-        for(let i=0; i<3; i++) {
-            if((grid[i*3] && grid[i*3+1] && grid[i*3+2]) || (grid[i] && grid[i+3] && grid[i+6])) {
-                gameActive = false; document.getElementById('winner-num').innerText = currentPlayer;
-                document.getElementById('win-overlay').style.display='flex';
-            }
-        }
-        if((grid[0] && grid[4] && grid[8]) || (grid[2] && grid[4] && grid[6])) {
+        const g = Array.from({length: 9}, (_, i) => document.getElementById(`p${currentPlayer}-bingo-${i}`).classList.contains('marked'));
+        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        if(wins.some(w => w.every(i => g[i]))) {
             gameActive = false; document.getElementById('winner-num').innerText = currentPlayer;
             document.getElementById('win-overlay').style.display='flex';
         }

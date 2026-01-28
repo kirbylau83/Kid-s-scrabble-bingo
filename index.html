@@ -7,15 +7,21 @@
         :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
         body { font-family: 'Comic Sans MS', sans-serif; background: #fdfcf0; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
 
-        /* SELECTION SCREEN */
-        #selection-screen { position: fixed; top:0; left:0; width: 100%; height: 100%; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
+        /* SELECTION SCREEN (LANDING PAGE) */
+        #selection-screen { position: absolute; top:0; left:0; width: 100%; min-height: 100%; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; padding: 40px 0; z-index: 200; overflow-y: auto; }
         .input-group { margin-bottom: 20px; text-align: center; }
         input[type="text"] { padding: 12px; font-size: 1.2rem; border-radius: 10px; border: 3px solid #cbd5e1; font-family: 'Comic Sans MS', sans-serif; width: 250px; text-align: center; }
-        .avatar-grid { display: grid; grid-template-columns: repeat(4, 100px); gap: 15px; }
+        .avatar-grid { display: grid; grid-template-columns: repeat(4, 100px); gap: 15px; margin-bottom: 30px; }
         .avatar-choice { font-size: 50px; background: white; border: 4px solid #cbd5e1; border-radius: 15px; cursor: pointer; text-align: center; padding: 10px; transition: 0.2s; }
         .avatar-choice:hover { transform: scale(1.1); border-color: #94a3b8; }
 
-        /* MAIN DASHBOARD LAYOUT */
+        /* RULES & FOOTER (ON LANDING PAGE) */
+        .rules-section { width: 90%; max-width: 600px; background: white; padding: 20px; border-radius: 20px; border: 3px solid #cbd5e1; margin-top: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .rules-section h3 { color: #5d4037; margin-top: 0; text-align: center; }
+        .rules-list { padding-left: 20px; line-height: 1.6; color: #334155; font-size: 0.95rem; }
+        .footer { text-align: center; font-size: 0.9rem; color: #64748b; margin-bottom: 20px; font-style: italic; width: 80%; }
+
+        /* DASHBOARD LAYOUT */
         .dashboard { display: flex; gap: 20px; align-items: flex-start; justify-content: center; width: 95%; max-width: 1200px; margin-top: 10px; }
 
         .player-sidebar { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 220px; }
@@ -47,12 +53,7 @@
         .btn-finish { background: #4caf50; }
         .btn-recall { background: #78909c; }
         .btn-pass { background: #ff9800; }
-
-        /* RULES & FOOTER */
-        .rules-section { width: 90%; max-width: 800px; background: white; padding: 20px; border-radius: 20px; border: 3px solid #cbd5e1; margin-top: 30px; margin-bottom: 20px; }
-        .rules-section h3 { color: #5d4037; margin-top: 0; text-align: center; }
-        .rules-list { padding-left: 20px; line-height: 1.6; color: #334155; }
-        .footer { text-align: center; font-size: 0.9rem; color: #64748b; margin-bottom: 40px; font-style: italic; }
+        .btn-restart { background: #ef4444; margin-top: 10px; }
 
         #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 300; }
     </style>
@@ -61,10 +62,12 @@
 
     <div id="selection-screen">
         <h1 id="selection-title">Player 1 Set Up</h1>
+        
         <div class="input-group">
             <input type="text" id="player-name-input" placeholder="Enter Your Name">
             <p>Then Pick your Animal!</p>
         </div>
+
         <div class="avatar-grid">
             <div class="avatar-choice" onclick="selectAvatar('🐼')">🐼</div>
             <div class="avatar-choice" onclick="selectAvatar('🐯')">🐯</div>
@@ -74,6 +77,22 @@
             <div class="avatar-choice" onclick="selectAvatar('🦊')">🦊</div>
             <div class="avatar-choice" onclick="selectAvatar('🐸')">🐸</div>
             <div class="avatar-choice" onclick="selectAvatar('🐵')">🐵</div>
+        </div>
+
+        <div class="rules-section">
+            <h3>📖 Rules of the Game</h3>
+            <ul class="rules-list">
+                <li>🌟 **The Goal:** Be the first player to get 3 marks in a row (horizontal, vertical, or diagonal) on your Bingo Card!</li>
+                <li>🏠 **The First Word:** The very first word played must touch the **Red Square** in the middle.</li>
+                <li>🔗 **Make a Chain:** Every new word must use at least one letter that is already on the board.</li>
+                <li>🎨 **Collect Icons:** If you place a letter on a square with a picture (icon), you get to mark that same picture on your Bingo Card!</li>
+                <li>♻️ **The Green Tile:** This is a Magic Tile! It can be any letter you want.</li>
+                <li>🍎 **Vowel Rule:** You will always have at least 2 vowels (A, E, I, O, U) in your hand to help you make words.</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            Designed and created by Logan's parents... anything to get our little Logan to love Scrabble!
         </div>
     </div>
 
@@ -100,25 +119,10 @@
                         <button class="btn-recall" onclick="recallTiles()">Recall</button>
                         <button class="btn-pass" onclick="passTurn()">Pass Turn</button>
                         <button class="btn-finish" onclick="finishTurn()">Finish Turn</button>
+                        <button class="btn-restart" onclick="location.reload()">Quit Game</button>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="rules-section">
-            <h3>📖 Rules of the Game</h3>
-            <ul class="rules-list">
-                <li>🌟 **The Goal:** Be the first player to get 3 marks in a row (horizontal, vertical, or diagonal) on your Bingo Card!</li>
-                <li>🏠 **The First Word:** The very first word played must touch the **Red Square** in the middle.</li>
-                <li>🔗 **Make a Chain:** Every new word must use at least one letter that is already on the board.</li>
-                <li>🎨 **Collect Icons:** If you place a letter on a square with a picture (icon), you get to mark that same picture on your Bingo Card!</li>
-                <li>♻️ **The Green Tile:** This is a Magic Tile! It can be any letter you want.</li>
-                <li>🍎 **Vowel Rule:** You will always have at least 2 vowels (A, E, I, O, U) in your hand to help you make words.</li>
-            </ul>
-        </div>
-
-        <div class="footer">
-            Designed and created by Logan's parents... anything to get our little Logan to love Scrabble!
         </div>
     </div>
 
@@ -144,6 +148,7 @@
             players.p1.avatar = emoji; players.p1.name = enteredName || "Player 1";
             nameInput.value = ""; document.getElementById('selection-title').innerText = "Player 2 Set Up";
             event.target.style.opacity = "0.2";
+            document.getElementById('selection-screen').scrollTo(0, 0); 
         } else {
             players.p2.avatar = emoji; players.p2.name = enteredName || "Player 2";
             document.getElementById('selection-screen').style.display = 'none';

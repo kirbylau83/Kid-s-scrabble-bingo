@@ -2,69 +2,106 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Scavenger Scrabble: For Logan!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scavenger Scrabble: Mobile Logan Edition</title>
     <style>
-        :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
-        body { font-family: 'Comic Sans MS', sans-serif; background: #fdfcf0; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-
-        /* SELECTION SCREEN (LANDING PAGE) */
-        #selection-screen { position: absolute; top:0; left:0; width: 100%; min-height: 100%; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; padding: 40px 0; z-index: 200; overflow-y: auto; }
-        .input-group { margin-bottom: 20px; text-align: center; }
-        input[type="text"] { padding: 12px; font-size: 1.2rem; border-radius: 10px; border: 3px solid #cbd5e1; font-family: 'Comic Sans MS', sans-serif; width: 250px; text-align: center; }
-        .avatar-grid { display: grid; grid-template-columns: repeat(4, 100px); gap: 15px; margin-bottom: 30px; }
-        .avatar-choice { font-size: 50px; background: white; border: 4px solid #cbd5e1; border-radius: 15px; cursor: pointer; text-align: center; padding: 10px; transition: 0.2s; }
-        .avatar-choice:hover { transform: scale(1.1); border-color: #94a3b8; }
-
-        /* RULES & FOOTER */
-        .rules-section { width: 90%; max-width: 600px; background: white; padding: 20px; border-radius: 20px; border: 3px solid #cbd5e1; margin-top: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .rules-section h3 { color: #5d4037; margin-top: 0; text-align: center; }
-        .rules-list { padding-left: 20px; line-height: 1.6; color: #334155; font-size: 0.95rem; }
-        .footer { text-align: center; font-size: 0.9rem; color: #64748b; margin-bottom: 20px; font-style: italic; width: 80%; }
-
-        /* DASHBOARD LAYOUT */
-        .dashboard { display: flex; gap: 20px; align-items: flex-start; justify-content: center; width: 95%; max-width: 1200px; margin-top: 10px; }
-
-        .player-sidebar { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 220px; }
-        .turn-box { width: 100%; padding: 10px; border-radius: 15px; text-align: center; color: white; font-weight: bold; font-size: 1.2rem; box-shadow: 0 4px 0 rgba(0,0,0,0.1); }
-        .p1-active { background: var(--p1-color); }
-        .p2-active { background: var(--p2-color); }
+        :root { --cell-size: 45px; --p1-color: #3b82f6; --p2-color: #ef4444; }
         
-        .current-avatar-display { font-size: 100px; background: white; padding: 10px; border-radius: 25px; border: 5px solid #cbd5e1; box-shadow: 0 6px 0 #cbd5e1; }
-        .bingo-zone { background: #f1f5f9; padding: 15px; border-radius: 20px; border: 3px solid #cbd5e1; text-align: center; width: 100%; }
-        .bingo-grid { display: grid; grid-template-columns: repeat(3, 60px); gap: 6px; justify-content: center; }
-        .bingo-cell { width: 60px; height: 60px; background: white; font-size: 30px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
-        .marked { background: #69f0ae !important; border: 3px solid #2e7d32 !important; box-shadow: 0 0 10px #69f0ae; }
+        body { 
+            font-family: 'Comic Sans MS', sans-serif; 
+            background: #fdfcf0; 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            height: 100vh; 
+            overscroll-behavior: none; /* Prevents "pull to refresh" accidents */
+        }
 
-        .board { display: grid; grid-template-columns: repeat(13, var(--cell-size)); grid-template-rows: repeat(13, var(--cell-size)); gap: 2px; background: #5d4037; padding: 6px; border: 5px solid #3e2723; border-radius: 10px; }
-        .board-cell { width: var(--cell-size); height: var(--cell-size); background: #fffde7; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.1rem; }
-        .board-cell.start-square { background-color: #ff5252 !important; border: 2px solid #b71c1c !important; }
-        .icon-square::after { content: attr(data-icon); position: absolute; font-size: 16px; bottom: 0; right: 0; opacity: 0.6; }
+        /* LANDING PAGE (ADAPTED FOR MOBILE) */
+        #selection-screen { 
+            position: fixed; top:0; left:0; width: 100%; height: 100%; 
+            background: #fdfcf0; display: flex; flex-direction: column; 
+            align-items: center; z-index: 1000; overflow-y: auto; padding-bottom: 40px;
+        }
+        .avatar-grid { display: grid; grid-template-columns: repeat(3, 80px); gap: 10px; }
+        .avatar-choice { font-size: 40px; background: white; border: 3px solid #cbd5e1; border-radius: 12px; cursor: pointer; text-align: center; padding: 5px; }
 
-        .controls-sidebar { display: flex; flex-direction: column; gap: 10px; width: 300px; }
-        .bag-container { background: white; padding: 10px; border-radius: 15px; border: 2px solid #cbd5e1; height: 160px; overflow-y: auto; }
-        .bag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; font-size: 0.8rem; }
-        .rack-zone { background: #efebe9; padding: 10px; border-radius: 20px; border: 3px dashed #a1887f; text-align: center; }
-        .tile { display: inline-block; width: 45px; height: 55px; background: #ffe082; border: 3px solid #ff8f00; border-radius: 8px; line-height: 55px; font-size: 28px; font-weight: bold; margin: 4px; cursor: pointer; box-shadow: 0 4px 0 #ff8f00; }
-        .tile.selected { background: #ffca28; transform: translateY(-8px); }
+        /* HEADER AREA */
+        .mobile-top-bar { 
+            width: 100%; display: flex; flex-direction: column; align-items: center; 
+            background: white; border-bottom: 3px solid #cbd5e1; padding: 10px 0; 
+        }
+        .turn-box { width: 90%; padding: 8px; border-radius: 12px; text-align: center; color: white; font-weight: bold; margin-bottom: 8px; }
+
+        /* BINGO AT TOP */
+        .bingo-mini-zone { display: flex; align-items: center; gap: 10px; background: #f1f5f9; padding: 8px; border-radius: 15px; border: 2px solid #cbd5e1; }
+        .mini-avatar { font-size: 40px; }
+        .bingo-grid { display: grid; grid-template-columns: repeat(3, 45px); gap: 4px; }
+        .bingo-cell { width: 45px; height: 45px; background: white; font-size: 22px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid #cbd5e1; }
+        .marked { background: #69f0ae !important; border: 2px solid #2e7d32 !important; box-shadow: 0 0 5px #69f0ae; }
+
+        /* THE BOARD (SCROLLABLE ON MOBILE) */
+        .board-container { 
+            width: 100%; overflow: auto; /* Allows panning on small screens */
+            flex-grow: 1; display: flex; justify-content: flex-start; align-items: flex-start; 
+            padding: 20px; box-sizing: border-box; 
+        }
+        .board { 
+            display: grid; grid-template-columns: repeat(13, var(--cell-size)); 
+            grid-template-rows: repeat(13, var(--cell-size)); gap: 2px; 
+            background: #5d4037; padding: 6px; border: 5px solid #3e2723; border-radius: 10px; 
+        }
+        .board-cell { width: var(--cell-size); height: var(--cell-size); background: #fffde7; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; border-radius: 4px; position: relative; }
+        .board-cell.start-square { background-color: #ff5252 !important; }
+        .icon-square::after { content: attr(data-icon); position: absolute; font-size: 14px; bottom: 0; right: 0; opacity: 0.6; }
+
+        /* BOTTOM DOCK (FIXED) */
+        .bottom-dock { 
+            width: 100%; background: #efebe9; border-top: 4px solid #a1887f; 
+            padding: 10px 0; display: flex; flex-direction: column; align-items: center; 
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.1); 
+        }
+        .rack-scroll { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 5px; }
+        .tile { 
+            min-width: 45px; height: 55px; background: #ffe082; border: 3px solid #ff8f00; 
+            border-radius: 8px; line-height: 55px; font-size: 28px; font-weight: bold; 
+            margin: 0 4px; text-align: center; box-shadow: 0 4px 0 #ff8f00; 
+        }
+        .tile.selected { background: #ffca28; transform: translateY(-5px); border-color: #e65100; }
         .tile.blank-tile { background: #81c784 !important; border-color: #2e7d32 !important; color: white; }
 
-        .btn-group { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px; }
-        button { padding: 10px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; font-size: 1rem; }
+        /* BUTTONS */
+        .mobile-btn-group { display: flex; gap: 8px; width: 95%; margin-top: 5px; }
+        button { flex: 1; padding: 12px 5px; border: none; border-radius: 10px; color: white; font-weight: bold; font-size: 0.9rem; }
         .btn-finish { background: #4caf50; }
         .btn-recall { background: #78909c; }
         .btn-pass { background: #ff9800; }
-        .btn-restart { background: #ef4444; margin-top: 10px; }
+        .btn-bag { background: #5d4037; } /* Special button to open bag drawer */
 
-        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 300; }
+        /* BAG DRAWER (POPUP) */
+        #bag-drawer { 
+            position: fixed; bottom: -100%; left: 0; width: 100%; height: 50%; 
+            background: white; z-index: 2000; border-radius: 20px 20px 0 0; 
+            transition: 0.4s; padding: 20px; box-sizing: border-box; box-shadow: 0 -10px 30px rgba(0,0,0,0.3);
+        }
+        #bag-drawer.open { bottom: 0; }
+        .bag-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; overflow-y: auto; height: 80%; }
+
+        .rules-section { width: 90%; background: white; padding: 15px; border-radius: 15px; border: 2px solid #cbd5e1; margin: 10px 0; font-size: 0.85rem; }
+        .footer { font-size: 0.7rem; color: #64748b; margin-top: 10px; text-align: center; padding: 0 10px;}
+
+        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 3000; }
     </style>
 </head>
 <body>
 
     <div id="selection-screen">
-        <h1 id="selection-title">Player 1 Set Up</h1>
+        <h2 id="selection-title">Logan's Scavenger Scrabble</h2>
         <div class="input-group">
-            <input type="text" id="player-name-input" placeholder="Enter Your Name">
-            <p>Then Pick your Animal!</p>
+            <input type="text" id="player-name-input" placeholder="Enter Name">
+            <p>Pick an Animal!</p>
         </div>
         <div class="avatar-grid">
             <div class="avatar-choice" onclick="selectAvatar('🐼')">🐼</div>
@@ -73,60 +110,51 @@
             <div class="avatar-choice" onclick="selectAvatar('🐘')">🐘</div>
             <div class="avatar-choice" onclick="selectAvatar('🐰')">🐰</div>
             <div class="avatar-choice" onclick="selectAvatar('🦊')">🦊</div>
-            <div class="avatar-choice" onclick="selectAvatar('🐸')">🐸</div>
-            <div class="avatar-choice" onclick="selectAvatar('🐵')">🐵</div>
         </div>
-
         <div class="rules-section">
-            <h3>📖 Rules of the Game</h3>
-            <ul class="rules-list">
-                <li>🌟 **The Goal:** Be the first player to get 3 marks in a row on your Bingo Card!</li>
-                <li>🏠 **The First Word:** The very first word played must touch the **Red Square** in the middle.</li>
-                <li>🔗 **Make a Chain:** Every new word must use at least one letter that is already on the board.</li>
-                <li>🎨 **Collect Icons:** If you place a letter on a square with a picture, you mark that picture on your Bingo Card!</li>
-                <li>♻️ **The Green Tile:** This is a Magic Tile! It can be any letter you want.</li>
-                <li>🍎 **Vowel Rule:** You will always have at least 2 vowels in your hand.</li>
-            </ul>
+            <h4 style="margin-top:0">Quick Rules:</h4>
+            3 in a row to win Bingo! Touch the RED square first. Connect words to black letters. Land on pictures to mark your card!
+        </div>
+        <div class="footer">Created by Logan's parents to help her love Scrabble!</div>
+    </div>
+
+    <div id="game-page" style="display:none; width:100%;">
+        <div class="mobile-top-bar">
+            <div id="turn-box" class="turn-box">Turn</div>
+            <div class="bingo-mini-zone">
+                <div id="active-avatar" class="mini-avatar"></div>
+                <div id="active-bingo" class="bingo-grid"></div>
+            </div>
         </div>
 
-        <div class="footer">
-            Designed and created by Logan's parents... anything to get our little Logan to love Scrabble!
+        <div class="board-container">
+            <div id="board" class="board"></div>
+        </div>
+
+        <div class="bottom-dock">
+            <div class="rack-scroll">
+                <div id="current-rack" style="display:flex;"></div>
+            </div>
+            <div class="mobile-btn-group">
+                <button class="btn-recall" onclick="recallTiles()">Recall</button>
+                <button class="btn-bag" onclick="toggleBag()">Bag</button>
+                <button class="btn-pass" onclick="passTurn()">Pass</button>
+                <button class="btn-finish" onclick="finishTurn()">Finish</button>
+            </div>
         </div>
     </div>
 
-    <div id="game-page" style="display:none;">
-        <div class="dashboard">
-            <div class="player-sidebar">
-                <div id="turn-box" class="turn-box">Name's Turn</div>
-                <div id="active-avatar" class="current-avatar-display"></div>
-                <div class="bingo-zone">
-                    <div id="active-bingo" class="bingo-grid"></div>
-                </div>
-            </div>
-
-            <div id="board" class="board"></div>
-
-            <div class="controls-sidebar">
-                <div class="bag-container">
-                    <strong>In Bag:</strong>
-                    <div id="bag-display" class="bag-grid"></div>
-                </div>
-                <div class="rack-zone">
-                    <div id="current-rack"></div>
-                    <div class="btn-group">
-                        <button class="btn-recall" onclick="recallTiles()">Recall</button>
-                        <button class="btn-pass" onclick="passTurn()">Pass Turn</button>
-                        <button class="btn-finish" onclick="finishTurn()">Finish Turn</button>
-                        <button class="btn-restart" onclick="location.reload()">Quit Game</button>
-                    </div>
-                </div>
-            </div>
+    <div id="bag-drawer">
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <strong>Letters Left:</strong>
+            <button onclick="toggleBag()" style="background:#78909c; flex:none; padding: 5px 15px;">Close</button>
         </div>
+        <div id="bag-display" class="bag-grid"></div>
     </div>
 
     <div id="win-overlay">
-        <h1 id="win-message" style="font-size: 3rem;"></h1>
-        <button onclick="location.reload()" style="background:#4caf50; padding: 15px 30px;">Play Again</button>
+        <h1 id="win-message" style="text-align:center;"></h1>
+        <button onclick="location.reload()" style="background:#4caf50; padding: 15px 30px; font-size:1.2rem;">Play Again</button>
     </div>
 
 <script>
@@ -143,14 +171,13 @@
         let nameInput = document.getElementById('player-name-input');
         let enteredName = nameInput.value.trim();
         if (!players.p1.avatar) {
-            players.p1.avatar = emoji; players.p1.name = enteredName || "Player 1";
+            players.p1.avatar = emoji; players.p1.name = enteredName || "P1";
             nameInput.value = ""; document.getElementById('selection-title').innerText = "Player 2 Set Up";
             event.target.style.opacity = "0.2";
-            document.getElementById('selection-screen').scrollTo(0, 0); 
         } else {
-            players.p2.avatar = emoji; players.p2.name = enteredName || "Player 2";
+            players.p2.avatar = emoji; players.p2.name = enteredName || "P2";
             document.getElementById('selection-screen').style.display = 'none';
-            document.getElementById('game-page').style.display = 'flex';
+            document.getElementById('game-page').style.display = 'block';
             init();
         }
     }
@@ -181,6 +208,8 @@
         }
         return hand;
     }
+
+    function toggleBag() { document.getElementById('bag-drawer').classList.toggle('open'); }
 
     function generateIconMap() {
         let spots = new Set();
@@ -215,16 +244,12 @@
         });
 
         const d = document.getElementById('bag-display');
-        const counts = {}; 
-        tileBag.forEach(l => counts[l] = (counts[l] || 0) + 1);
+        const counts = {}; tileBag.forEach(l => counts[l] = (counts[l] || 0) + 1);
         d.innerHTML = '';
-        
-        // Only show letters that have a count greater than 0
         Object.keys(tileDistribution).sort().forEach(l => {
             if (counts[l] > 0) {
-                let item = document.createElement('div'); 
-                item.innerHTML = `${l === '?' ? '♻️' : l}:${counts[l]}`;
-                d.appendChild(item);
+                let item = document.createElement('div'); item.style.padding = "5px";
+                item.innerHTML = `${l === '?' ? '♻️' : l}:${counts[l]}`; d.appendChild(item);
             }
         });
         renderRack();
@@ -266,7 +291,7 @@
     }
 
     function passTurn() {
-        if(confirm("Pass Turn? Hand will swap.")) {
+        if(confirm("Discard hand and get 7 new?")) {
             recallTiles(); tileBag.push(...gameState[`p${currentPlayer}`].rack); shuffle(tileBag);
             gameState[`p${currentPlayer}`].rack = drawBalanced(7); switchTurn();
         }

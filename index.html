@@ -207,17 +207,25 @@
         turnBox.innerText = `${pData.name}'s Turn`;
         turnBox.className = `turn-box ${pKey}-active`;
         document.getElementById('active-avatar').innerText = pData.avatar;
+        
         const g = document.getElementById('active-bingo'); g.innerHTML = '';
         gameState[pKey].bingo.forEach((icon, i) => {
             const c = document.createElement('div'); c.className = 'bingo-cell' + (gameState[pKey].marks[i] ? ' marked' : '');
             c.innerText = icon; g.appendChild(c);
         });
+
         const d = document.getElementById('bag-display');
-        const counts = {}; tileBag.forEach(l => counts[l] = (counts[l] || 0) + 1);
+        const counts = {}; 
+        tileBag.forEach(l => counts[l] = (counts[l] || 0) + 1);
         d.innerHTML = '';
+        
+        // Only show letters that have a count greater than 0
         Object.keys(tileDistribution).sort().forEach(l => {
-            let item = document.createElement('div'); item.innerHTML = `${l === '?' ? '♻️' : l}:${counts[l] || 0}`;
-            d.appendChild(item);
+            if (counts[l] > 0) {
+                let item = document.createElement('div'); 
+                item.innerHTML = `${l === '?' ? '♻️' : l}:${counts[l]}`;
+                d.appendChild(item);
+            }
         });
         renderRack();
     }

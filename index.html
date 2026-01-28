@@ -6,29 +6,39 @@
     <title>Logan's Scavenger Scrabble</title>
     <style>
         :root { --cell-size: 45px; --p1-color: #3b82f6; --p2-color: #ef4444; }
-        body { font-family: 'Comic Sans MS', sans-serif; background: #fdfcf0; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overscroll-behavior: none; }
+        body { font-family: 'Comic Sans MS', sans-serif; background: #fdfcf0; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
 
         /* LANDING PAGE */
-        #selection-screen { position: absolute; top:0; left:0; width: 100%; min-height: 100%; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; padding: 30px 0; z-index: 1000; overflow-y: auto; }
+        #selection-screen { position: absolute; top:0; left:0; width: 100%; min-height: 100%; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; padding: 30px 0; z-index: 1000; }
         .lobby-card { background: white; padding: 20px; border-radius: 20px; border: 3px solid #cbd5e1; width: 85%; max-width: 450px; text-align: center; margin-bottom: 20px; }
         .avatar-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
         .avatar-choice { font-size: 40px; background: white; border: 3px solid #cbd5e1; border-radius: 12px; cursor: pointer; text-align: center; padding: 5px; }
-        .selected-avatar { border-color: #3b82f6; background: #dbeafe; }
 
         /* GAME UI */
         #game-page { display: none; width: 100%; flex-direction: column; align-items: center; }
-        .mobile-top-bar { width: 100%; display: flex; flex-direction: column; align-items: center; background: white; border-bottom: 3px solid #cbd5e1; padding: 10px 0; position: sticky; top: 0; z-index: 500; }
+        .mobile-top-bar { width: 100%; display: flex; flex-direction: column; align-items: center; background: white; border-bottom: 3px solid #cbd5e1; padding: 10px 0; }
         .turn-box { width: 90%; padding: 8px; border-radius: 12px; text-align: center; color: white; font-weight: bold; margin-bottom: 8px; }
         .bingo-mini-zone { display: flex; align-items: center; gap: 10px; background: #f1f5f9; padding: 8px; border-radius: 15px; border: 2px solid #cbd5e1; }
         .bingo-grid { display: grid; grid-template-columns: repeat(3, 45px); gap: 4px; }
         .bingo-cell { width: 45px; height: 45px; background: white; font-size: 22px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid #cbd5e1; }
         .marked { background: #69f0ae !important; border: 2px solid #2e7d32 !important; box-shadow: 0 0 5px #69f0ae; }
 
-        /* THE BOARD */
-        .board-container { width: 100%; overflow: auto; flex-grow: 1; padding: 20px; box-sizing: border-box; }
-        .board { display: grid; grid-template-columns: repeat(13, var(--cell-size)); grid-template-rows: repeat(13, var(--cell-size)); gap: 2px; background: #5d4037; padding: 6px; border: 5px solid #3e2723; border-radius: 10px; }
+        /* FIXED 13x13 GRID */
+        .board-container { width: 100vw; overflow: auto; padding: 20px; box-sizing: border-box; display: block; text-align: center; }
+        .board { 
+            display: grid; 
+            grid-template-columns: repeat(13, var(--cell-size)); 
+            grid-template-rows: repeat(13, var(--cell-size)); 
+            gap: 2px; 
+            background: #5d4037; 
+            padding: 8px; 
+            border: 6px solid #3e2723; 
+            border-radius: 10px;
+            margin: 0 auto;
+            width: fit-content; /* Critical: prevents the grid from stretching or squishing */
+        }
         .board-cell { width: var(--cell-size); height: var(--cell-size); background: #fffde7; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; position: relative; border-radius: 4px; }
-        .board-cell.start-square { background-color: #ff5252 !important; }
+        .board-cell.start-square { background-color: #ff5252 !important; border: 2px solid #b71c1c !important; }
         .icon-square::after { content: attr(data-icon); position: absolute; font-size: 14px; bottom: 0; right: 0; opacity: 0.6; }
 
         /* BOTTOM DOCK */
@@ -36,7 +46,6 @@
         .rack-scroll { width: 100%; overflow-x: auto; display: flex; justify-content: center; padding-bottom: 5px; height: 65px; }
         .tile { min-width: 45px; height: 55px; background: #ffe082; border: 3px solid #ff8f00; border-radius: 8px; line-height: 55px; font-size: 28px; font-weight: bold; margin: 0 4px; text-align: center; box-shadow: 0 4px 0 #ff8f00; }
         .tile.selected { background: #ffca28; transform: translateY(-5px); }
-        .tile.blank-tile { background: #81c784 !important; border-color: #2e7d32 !important; color: white; }
 
         .btn-group { display: flex; gap: 8px; width: 95%; margin-top: 5px; }
         button { flex: 1; padding: 12px 5px; border: none; border-radius: 10px; color: white; font-weight: bold; font-size: 0.9rem; }
@@ -45,20 +54,18 @@
         .btn-pass { background: #ff9800; }
         .btn-bag { background: #5d4037; }
 
-        #bag-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; height: 50%; background: white; z-index: 2000; border-radius: 20px 20px 0 0; transition: 0.4s; padding: 20px; box-sizing: border-box; box-shadow: 0 -10px 30px rgba(0,0,0,0.3); overflow-y: auto; }
+        #bag-drawer { position: fixed; bottom: -100%; left: 0; width: 100%; height: 50%; background: white; z-index: 2000; border-radius: 20px 20px 0 0; transition: 0.4s; padding: 20px; box-sizing: border-box; overflow-y: auto; box-shadow: 0 -10px 30px rgba(0,0,0,0.3); }
         #bag-drawer.open { bottom: 0; }
         .bag-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 
-        .rules-section { width: 90%; max-width: 400px; background: white; padding: 15px; border-radius: 15px; border: 2px solid #cbd5e1; margin-top: 10px; font-size: 0.85rem; }
-        .footer { text-align: center; font-size: 0.85rem; color: #64748b; margin-top: 20px; padding: 0 20px; line-height: 1.4; font-style: italic; max-width: 400px; }
+        .footer { text-align: center; font-size: 0.85rem; color: #64748b; margin-top: 20px; padding: 0 20px; font-style: italic; max-width: 400px; }
         #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 3000; text-align: center; }
     </style>
 </head>
 <body>
 
     <div id="selection-screen">
-        <h1 style="color:#5d4037; margin-bottom:10px;">Logan's Scavenger Scrabble</h1>
-        
+        <h1 style="color:#5d4037;">Logan's Scavenger Scrabble</h1>
         <div class="lobby-card">
             <input type="text" id="p-name" placeholder="Enter Name" style="padding:12px; width:80%; border-radius:10px; border:2px solid #cbd5e1; text-align:center; font-size:1.1rem;">
             <p id="setup-msg" style="margin: 10px 0; font-weight:bold; color:#64748b;">Player 1: Pick an Animal</p>
@@ -77,17 +84,7 @@
                 <div class="avatar-choice" onclick="selectAvatar('🐝')">🐝</div>
             </div>
         </div>
-
-        <div class="rules-section">
-            <h4 style="margin:0 0 5px 0; text-align:center;">📖 Rules:</h4>
-            • Touch the **RED** square first!<br>
-            • Land on a picture to mark your card.<br>
-            • Get 3 in a row to win **BINGO!**
-        </div>
-
-        <div class="footer">
-            Designed and created by Logan's parents to get their daughter interested in Scrabble!
-        </div>
+        <div class="footer">Designed and created by Logan's parents to get their daughter interested in Scrabble!</div>
     </div>
 
     <div id="game-page">
@@ -98,36 +95,29 @@
                 <div id="active-bingo" class="bingo-grid"></div>
             </div>
         </div>
-
-        <div class="board-container">
-            <div id="board" class="board"></div>
-        </div>
-
+        <div class="board-container"><div id="board" class="board"></div></div>
         <div class="bottom-dock">
-            <div class="rack-scroll">
-                <div id="current-rack" style="display:flex;"></div>
-            </div>
+            <div class="rack-scroll"><div id="current-rack" style="display:flex;"></div></div>
             <div class="btn-group">
                 <button class="btn-recall" onclick="recallTiles()">Recall</button>
                 <button class="btn-bag" onclick="toggleBag()">Bag</button>
                 <button class="btn-pass" onclick="passTurn()">Pass</button>
                 <button class="btn-finish" onclick="finishTurn()">Finish</button>
             </div>
-            <button onclick="location.reload()" style="background:none; color:#64748b; font-size:0.7rem; margin-top:5px; padding:0;">Quit Game</button>
         </div>
     </div>
 
     <div id="bag-drawer">
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:15px;">
             <strong>Letters Left:</strong>
-            <button onclick="toggleBag()" style="background:#78909c; flex:none; padding:5px 15px;">Close</button>
+            <button onclick="toggleBag()" style="background:#78909c; padding:5px 15px;">Close</button>
         </div>
         <div id="bag-display" class="bag-grid"></div>
     </div>
 
     <div id="win-overlay">
         <h1 id="win-message"></h1>
-        <button onclick="location.reload()" style="background:#4caf50; padding: 20px 40px;">Play Again</button>
+        <button onclick="location.reload()" style="background:#4caf50; padding: 20px 40px;">New Game</button>
     </div>
 
 <script>
@@ -154,8 +144,12 @@
 
     function init() {
         for (let l in tileDistribution) { for (let i = 0; i < tileDistribution[l]; i++) tileBag.push(l); }
-        shuffle(tileBag);
-        generateIconMap();
+        for (let i = tileBag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [tileBag[i], tileBag[j]] = [tileBag[j], tileBag[i]]; }
+        
+        let spots = new Set();
+        while(spots.size < 50) { let s = Math.floor(Math.random() * 169); if(s !== 84) spots.add(s); }
+        spots.forEach(s => iconMap[`${Math.floor(s/13)}-${s%13}`] = icons[Math.floor(Math.random()*9)]);
+
         createBoard();
         for(let p of ['p1', 'p2']) {
             while(gameState[p].rack.length < 7) gameState[p].rack.push(tileBag.pop());
@@ -164,22 +158,18 @@
         updateUI();
     }
 
-    function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
-
-    function generateIconMap() {
-        let spots = new Set();
-        while(spots.size < 50) { let s = Math.floor(Math.random() * 169); if(s !== 84) spots.add(s); }
-        spots.forEach(s => iconMap[`${Math.floor(s/13)}-${s%13}`] = icons[Math.floor(Math.random()*9)]);
-    }
-
     function createBoard() {
         const board = document.getElementById('board');
+        board.innerHTML = '';
         for(let r=0; r<13; r++) {
             for(let c=0; c<13; c++) {
-                const cell = document.createElement('div'); cell.className = 'board-cell';
+                const cell = document.createElement('div');
+                cell.className = 'board-cell';
                 if(r === 6 && c === 6) cell.classList.add('start-square');
                 if(iconMap[`${r}-${c}`]) { cell.classList.add('icon-square'); cell.setAttribute('data-icon', iconMap[`${r}-${c}`]); }
-                cell.onclick = () => placeTile(r, c); cell.id = `cell-${r}-${c}`; board.appendChild(cell);
+                cell.onclick = () => placeTile(r, c);
+                cell.id = `cell-${r}-${c}`;
+                board.appendChild(cell);
             }
         }
     }
@@ -191,13 +181,11 @@
         turnBox.innerText = `${pData.name}'s Turn`;
         turnBox.style.background = (currentPlayer === 1) ? "var(--p1-color)" : "var(--p2-color)";
         document.getElementById('active-avatar').innerText = pData.avatar;
-        
         const g = document.getElementById('active-bingo'); g.innerHTML = '';
         gameState[pKey].bingo.forEach((icon, i) => {
             const c = document.createElement('div'); c.className = 'bingo-cell' + (gameState[pKey].marks[i] ? ' marked' : '');
             c.innerText = icon; g.appendChild(c);
         });
-
         const d = document.getElementById('bag-display');
         const counts = {}; tileBag.forEach(l => counts[l] = (counts[l] || 0) + 1);
         d.innerHTML = '';
@@ -213,9 +201,11 @@
     function renderRack() {
         const rD = document.getElementById('current-rack'); rD.innerHTML = '';
         gameState[`p${currentPlayer}`].rack.forEach((l, i) => {
-            const t = document.createElement('div'); t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '') + (l === '?' ? ' blank-tile' : '');
+            const t = document.createElement('div');
+            t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '') + (l === '?' ? ' blank-tile' : '');
             t.innerText = l === '?' ? "" : l;
-            t.onclick = () => { if(gameActive) { selectedTileIndex = i; renderRack(); } }; rD.appendChild(t);
+            t.onclick = () => { selectedTileIndex = i; renderRack(); };
+            rD.appendChild(t);
         });
     }
 
@@ -225,7 +215,7 @@
         const cell = document.getElementById(`cell-${r}-${c}`);
         if (selectedTileIndex !== null && cell.innerText === "") {
             let letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
-            if(letter === '?') { letter = prompt("What letter?").toUpperCase(); if(!letter) return; }
+            if(letter === '?') { letter = prompt("Letter?").toUpperCase(); if(!letter || letter.length !== 1) return; }
             cell.innerText = letter; cell.style.color = "#2563eb"; 
             newTilesThisTurn.push({r, c, letter, wasBlank: (gameState[`p${currentPlayer}`].rack[selectedTileIndex] === '?')});
             gameState[`p${currentPlayer}`].rack.splice(selectedTileIndex, 1);
@@ -243,32 +233,52 @@
     }
 
     function passTurn() {
-        if(confirm("Pass and get 7 new letters?")) {
-            recallTiles(); tileBag.push(...gameState[`p${currentPlayer}`].rack); shuffle(tileBag);
+        if(confirm("New letters?")) {
+            recallTiles(); tileBag.push(...gameState[`p${currentPlayer}`].rack);
+            for (let i = tileBag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [tileBag[i], tileBag[j]] = [tileBag[j], tileBag[i]]; }
             gameState[`p${currentPlayer}`].rack = []; while(gameState[`p${currentPlayer}`].rack.length < 7 && tileBag.length > 0) gameState[`p${currentPlayer}`].rack.push(tileBag.pop());
             switchTurn();
         }
     }
 
-    async function finishTurn() {
+    function finishTurn() {
         if(newTilesThisTurn.length === 0) return;
+
+        // CONNECTION CHECK
+        let isConnected = false;
+        if (boardIsFresh) {
+            isConnected = newTilesThisTurn.some(t => t.r === 6 && t.c === 6);
+        } else {
+            isConnected = newTilesThisTurn.some(t => {
+                const neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
+                return neighbors.some(([dr, dc]) => {
+                    const nr = t.r + dr, nc = t.c + dc;
+                    if (nr < 0 || nr >= 13 || nc < 0 || nc >= 13) return false;
+                    const neighborCell = document.getElementById(`cell-${nr}-${nc}`);
+                    // If neighbor has text AND it wasn't placed this turn (it's black/locked)
+                    return neighborCell.innerText !== "" && neighborCell.style.color !== "rgb(37, 99, 235)";
+                });
+            });
+        }
+
+        if (!isConnected) { alert("Word must connect to letters already on the board!"); return; }
+
         newTilesThisTurn.forEach(t => {
             const icon = iconMap[`${t.r}-${t.c}`];
             if(icon) gameState[`p${currentPlayer}`].bingo.forEach((item, i) => { if(item === icon) gameState[`p${currentPlayer}`].marks[i] = true; });
             document.getElementById(`cell-${t.r}-${t.c}`).style.color = "black";
         });
+
         newTilesThisTurn = []; boardIsFresh = false;
         while(gameState[`p${currentPlayer}`].rack.length < 7 && tileBag.length > 0) gameState[`p${currentPlayer}`].rack.push(tileBag.pop());
-        checkWin(); switchTurn();
-    }
-
-    function checkWin() {
+        
         const marks = gameState[`p${currentPlayer}`].marks;
         const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
         if(wins.some(w => w.every(i => marks[i]))) {
-            gameActive = false; const p = players[`p${currentPlayer}`];
-            document.getElementById('win-message').innerText = `${p.avatar} ${p.name} BINGO WINS!`;
-            document.getElementById('win-overlay').style.display='flex';
+            document.getElementById('win-message').innerText = `${players[`p${currentPlayer}`].avatar} ${players[`p${currentPlayer}`].name} BINGO!`;
+            document.getElementById('win-overlay').style.display = 'flex';
+        } else {
+            switchTurn();
         }
     }
 

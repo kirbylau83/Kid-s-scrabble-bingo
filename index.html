@@ -2,65 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Scavenger Scrabble: Side-by-Side Bingo</title>
+    <title>Scavenger Scrabble: Compact Dashboard</title>
     <style>
-        :root { --cell-size: 42px; --p1-color: #3b82f6; --p2-color: #ef4444; }
-        body { font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; overflow-x: hidden;}
+        :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
+        body { font-family: 'Comic Sans MS', sans-serif; background: #fdfcf0; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
 
         /* SELECTION SCREEN */
         #selection-screen { position: fixed; top:0; left:0; width: 100%; height: 100%; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
-        .avatar-grid { display: grid; grid-template-columns: repeat(4, 120px); gap: 20px; margin-top: 20px; }
-        .avatar-choice { font-size: 60px; background: white; border: 4px solid #cbd5e1; border-radius: 20px; cursor: pointer; transition: 0.2s; padding: 10px; text-align: center; }
-        .avatar-choice:hover { transform: scale(1.1); border-color: #94a3b8; }
+        .avatar-grid { display: grid; grid-template-columns: repeat(4, 100px); gap: 15px; }
+        .avatar-choice { font-size: 50px; background: white; border: 4px solid #cbd5e1; border-radius: 15px; cursor: pointer; text-align: center; padding: 10px; }
 
-        /* GAME LAYOUT */
-        #game-page { display: none; flex-direction: column; align-items: center; width: 100%; }
-        .game-header { text-align: center; margin-bottom: 15px; padding: 15px; border-radius: 20px; width: 60%; color: white; display: flex; align-items: center; justify-content: center; gap: 20px; }
+        /* HEADER */
+        .game-header { text-align: center; padding: 8px; border-radius: 15px; width: 60%; color: white; margin-bottom: 10px; }
         .p1-turn { background: var(--p1-color); }
         .p2-turn { background: var(--p2-color); }
 
-        /* SIDE BY SIDE BINGO SECTION */
-        .bingo-container-wrapper { display: flex; gap: 40px; margin-bottom: 20px; justify-content: center; width: 100%; }
-        .bingo-zone { text-align: center; padding: 10px; border-radius: 20px; background: #f1f5f9; border: 3px solid #cbd5e1; }
-        .bingo-grid { display: grid; grid-template-columns: repeat(3, 70px); gap: 8px; background: #cbd5e1; padding: 10px; border-radius: 12px; }
-        .bingo-cell { width: 70px; height: 70px; background: white; font-size: 35px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
-        .marked { background: #69f0ae !important; box-shadow: 0 0 15px #69f0ae; border: 3px solid #2e7d32 !important; }
+        /* MAIN DASHBOARD LAYOUT */
+        .dashboard { display: flex; gap: 20px; align-items: flex-start; justify-content: center; width: 95%; max-width: 1200px; }
 
-        /* MAIN GAME AREA */
-        .main-game-area { display: flex; align-items: center; gap: 20px; margin-top: 10px; }
-        .current-avatar-display { font-size: 90px; background: white; padding: 15px; border-radius: 25px; border: 5px solid #cbd5e1; box-shadow: 0 8px 0 #cbd5e1; }
-        
-        .board { display: grid; grid-template-columns: repeat(13, var(--cell-size)); grid-template-rows: repeat(13, var(--cell-size)); gap: 2px; background: #5d4037; padding: 8px; border: 6px solid #3e2723; border-radius: 12px; }
-        .board-cell { width: var(--cell-size); height: var(--cell-size); background: #fffde7; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.3rem; }
+        /* LEFT COLUMN: AVATAR + BINGO */
+        .player-sidebar { display: flex; flex-direction: column; align-items: center; gap: 15px; width: 220px; }
+        .current-avatar-display { font-size: 100px; background: white; padding: 15px; border-radius: 25px; border: 5px solid #cbd5e1; box-shadow: 0 6px 0 #cbd5e1; }
+        .bingo-zone { background: #f1f5f9; padding: 10px; border-radius: 20px; border: 3px solid #cbd5e1; text-align: center; }
+        .bingo-grid { display: grid; grid-template-columns: repeat(3, 60px); gap: 6px; }
+        .bingo-cell { width: 60px; height: 60px; background: white; font-size: 30px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
+        .marked { background: #69f0ae !important; border: 3px solid #2e7d32 !important; box-shadow: 0 0 10px #69f0ae; }
+
+        /* CENTER COLUMN: THE BOARD */
+        .board { display: grid; grid-template-columns: repeat(13, var(--cell-size)); grid-template-rows: repeat(13, var(--cell-size)); gap: 2px; background: #5d4037; padding: 6px; border: 5px solid #3e2723; border-radius: 10px; }
+        .board-cell { width: var(--cell-size); height: var(--cell-size); background: #fffde7; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.1rem; }
         .board-cell.start-square { background-color: #ff5252 !important; border: 2px solid #b71c1c !important; }
-        .icon-square::after { content: attr(data-icon); position: absolute; font-size: 18px; bottom: 1px; right: 1px; opacity: 0.8; }
+        .icon-square::after { content: attr(data-icon); position: absolute; font-size: 16px; bottom: 0; right: 0; opacity: 0.6; }
 
-        /* HORIZONTAL BAG SECTION */
-        .horizontal-bag { width: 100%; max-width: 600px; background: white; padding: 15px; border-radius: 15px; border: 2px solid #cbd5e1; margin-top: 15px; }
-        .bag-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; font-size: 0.9rem; }
-        .bag-item { background: #f8fafc; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        /* RIGHT COLUMN: BAG + RACK */
+        .controls-sidebar { display: flex; flex-direction: column; gap: 15px; width: 300px; }
+        .bag-container { background: white; padding: 10px; border-radius: 15px; border: 2px solid #cbd5e1; height: 180px; overflow-y: auto; }
+        .bag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; font-size: 0.8rem; }
+        .rack-zone { background: #efebe9; padding: 15px; border-radius: 20px; border: 3px dashed #a1887f; text-align: center; }
+        .tile { display: inline-block; width: 45px; height: 55px; background: #ffe082; border: 3px solid #ff8f00; border-radius: 8px; line-height: 55px; font-size: 28px; font-weight: bold; margin: 4px; cursor: pointer; box-shadow: 0 4px 0 #ff8f00; }
+        .tile.selected { background: #ffca28; transform: translateY(-8px); }
+        .tile.blank-tile { background: #81c784 !important; border-color: #2e7d32 !important; color: white; }
 
-        /* RACK & BUTTONS */
-        .rack-container { margin: 25px; padding: 20px; background: #efebe9; border-radius: 25px; width: 650px; text-align: center; border: 4px dashed #a1887f; }
-        .tile { display: inline-block; width: 50px; height: 60px; background: #ffe082; border: 3px solid #ff8f00; border-radius: 10px; line-height: 60px; font-size: 34px; font-weight: bold; margin: 5px; cursor: pointer; box-shadow: 0 5px 0 #ff8f00; }
-        .tile.selected { background: #ffca28; transform: translateY(-10px); }
-        .tile.blank-tile { background: #81c784 !important; border-color: #2e7d32 !important; color: white; box-shadow: 0 5px 0 #2e7d32; }
-
-        .btn-group { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
-        button { padding: 15px 25px; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; color: white; font-size: 1.1rem; }
+        .btn-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+        button { padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; font-size: 1rem; }
         .btn-finish { background: #4caf50; }
         .btn-recall { background: #78909c; }
         .btn-pass { background: #ff9800; }
-        
+
         #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 300; }
-        .hidden-visibility { opacity: 0.2; filter: grayscale(1); } /* Gray out the card not in turn */
     </style>
 </head>
 <body>
 
     <div id="selection-screen">
-        <h1 id="selection-title">Player 1: Pick your Animal!</h1>
-        <div class="avatar-grid" id="avatar-grid">
+        <h1>Pick your Animal!</h1>
+        <div id="selection-msg">Player 1 Go!</div>
+        <div class="avatar-grid">
             <div class="avatar-choice" onclick="selectAvatar('🐼')">🐼</div>
             <div class="avatar-choice" onclick="selectAvatar('🐯')">🐯</div>
             <div class="avatar-choice" onclick="selectAvatar('🦁')">🦁</div>
@@ -72,45 +69,42 @@
         </div>
     </div>
 
-    <div id="game-page">
+    <div id="game-page" style="display:none;">
         <div id="turn-indicator" class="game-header p1-turn">
-            <span id="header-avatar" style="font-size: 40px; margin-right: 15px;"></span>
             <h2 id="turn-text" style="margin:0;">Player 1's Turn</h2>
         </div>
 
-        <div class="bingo-container-wrapper">
-            <div id="p1-bingo-zone" class="bingo-zone">
-                <h4 id="p1-label">Player 1</h4>
-                <div id="p1-bingo" class="bingo-grid"></div>
+        <div class="dashboard">
+            <div class="player-sidebar">
+                <div id="active-avatar" class="current-avatar-display"></div>
+                <div class="bingo-zone">
+                    <h3 id="bingo-label" style="margin:5px;">Bingo Card</h3>
+                    <div id="active-bingo" class="bingo-grid"></div>
+                </div>
             </div>
-            <div id="p2-bingo-zone" class="bingo-zone">
-                <h4 id="p2-label">Player 2</h4>
-                <div id="p2-bingo" class="bingo-grid"></div>
-            </div>
-        </div>
 
-        <div class="main-game-area">
-            <div id="active-avatar-sidebar" class="current-avatar-display">🐼</div>
             <div id="board" class="board"></div>
-        </div>
 
-        <div class="horizontal-bag">
-            <div id="bag-display" class="bag-grid"></div>
-        </div>
-
-        <div class="rack-container">
-            <div id="current-rack"></div>
-            <div class="btn-group">
-                <button class="btn-recall" onclick="recallTiles()">Recall</button>
-                <button class="btn-pass" onclick="passTurn()">Pass Turn</button>
-                <button class="btn-finish" onclick="finishTurn()">Finish Turn</button>
+            <div class="controls-sidebar">
+                <div class="bag-container">
+                    <strong>In Bag:</strong>
+                    <div id="bag-display" class="bag-grid"></div>
+                </div>
+                <div class="rack-zone">
+                    <div id="current-rack"></div>
+                    <div class="btn-group">
+                        <button class="btn-recall" onclick="recallTiles()">Recall</button>
+                        <button class="btn-pass" onclick="passTurn()">Pass Turn</button>
+                        <button class="btn-finish" onclick="finishTurn()">Finish Turn</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <div id="win-overlay">
-        <h1 id="win-message" style="font-size: 4rem;"></h1>
-        <button onclick="location.reload()" style="background:#4caf50; padding: 20px 40px; font-size: 1.5rem;">Play Again</button>
+        <h1 id="win-message" style="font-size: 3rem;"></h1>
+        <button onclick="location.reload()" style="background:#4caf50; padding: 15px 30px;">Play Again</button>
     </div>
 
 <script>
@@ -119,21 +113,12 @@
     const vowels = "AEIOU";
     const tileDistribution = {'E': 12, 'A': 9, 'I': 9, 'O': 8, 'N': 6, 'R': 6, 'T': 6, 'D': 4, 'L': 4, 'S': 4, 'U': 4, 'G': 3, 'B': 2, 'C': 2, 'M': 2, 'P': 2, 'F': 2, 'H': 2, 'V': 2, 'W': 2, 'Y': 2, '?': 2, 'K': 1, 'J': 1, 'X': 1, 'Q': 1, 'Z': 1};
 
-    let p1Avatar = '', p2Avatar = '';
-    let tileBag = [], currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
-    let boardIsFresh = true, gameState = { p1: { rack: [], bingo: [] }, p2: { rack: [], bingo: [] } };
+    let p1Avatar = '', p2Avatar = '', tileBag = [], currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
+    let boardIsFresh = true, gameState = { p1: { rack: [], bingo: [], marks: new Array(9).fill(false) }, p2: { rack: [], bingo: [], marks: new Array(9).fill(false) } };
 
     function selectAvatar(emoji) {
-        if (!p1Avatar) {
-            p1Avatar = emoji;
-            document.getElementById('selection-title').innerText = "Player 2: Pick your Animal!";
-            event.target.style.opacity = "0.2";
-        } else {
-            p2Avatar = emoji;
-            document.getElementById('selection-screen').style.display = 'none';
-            document.getElementById('game-page').style.display = 'flex';
-            init();
-        }
+        if (!p1Avatar) { p1Avatar = emoji; document.getElementById('selection-msg').innerText = "Player 2 Go!"; event.target.style.opacity = "0.2"; }
+        else { p2Avatar = emoji; document.getElementById('selection-screen').style.display = 'none'; document.getElementById('game-page').style.display = 'flex'; init(); }
     }
 
     function init() {
@@ -145,10 +130,7 @@
             gameState[p].rack = drawBalanced(7);
             gameState[p].bingo = Array.from({length: 9}, () => icons[Math.floor(Math.random()*9)]);
         }
-        document.getElementById('p1-label').innerText = p1Avatar + " Card";
-        document.getElementById('p2-label').innerText = p2Avatar + " Card";
         updateUI();
-        renderBingo(1); renderBingo(2);
     }
 
     function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
@@ -161,9 +143,7 @@
             for(let i=0; i < hand.length && vCount < 2; i++) {
                 if(!vowels.includes(hand[i]) && hand[i] !== '?') {
                     let vIdx = tileBag.findIndex(l => vowels.includes(l));
-                    if(vIdx !== -1) {
-                        let old = hand[i]; hand[i] = tileBag.splice(vIdx, 1)[0]; tileBag.push(old); shuffle(tileBag); vCount++;
-                    }
+                    if(vIdx !== -1) { let old = hand[i]; hand[i] = tileBag.splice(vIdx, 1)[0]; tileBag.push(old); shuffle(tileBag); vCount++; }
                 }
             }
         }
@@ -172,10 +152,7 @@
 
     function generateIconMap() {
         let spots = new Set();
-        while(spots.size < 50) { 
-            let s = Math.floor(Math.random() * 169);
-            if(s !== 84) spots.add(s);
-        }
+        while(spots.size < 50) { let s = Math.floor(Math.random() * 169); if(s !== 84) spots.add(s); }
         spots.forEach(s => iconMap[`${Math.floor(s/13)}-${s%13}`] = icons[Math.floor(Math.random()*9)]);
     }
 
@@ -195,23 +172,24 @@
     }
 
     function updateUI() {
-        const currentAvatar = currentPlayer === 1 ? p1Avatar : p2Avatar;
-        document.getElementById('active-avatar-sidebar').innerText = currentAvatar;
-        document.getElementById('header-avatar').innerText = currentAvatar;
+        const pKey = `p${currentPlayer}`;
+        document.getElementById('active-avatar').innerText = currentPlayer === 1 ? p1Avatar : p2Avatar;
         document.getElementById('turn-text').innerText = `Player ${currentPlayer}'s Turn`;
-        document.getElementById('turn-indicator').className = `game-header p${currentPlayer}-turn`;
+        document.getElementById('turn-indicator').className = `game-header ${pKey}-turn`;
         
-        // Gray out non-active Bingo card
-        document.getElementById('p1-bingo-zone').className = currentPlayer === 1 ? 'bingo-zone' : 'bingo-zone hidden-visibility';
-        document.getElementById('p2-bingo-zone').className = currentPlayer === 2 ? 'bingo-zone' : 'bingo-zone hidden-visibility';
+        // Render Active Bingo Only
+        const g = document.getElementById('active-bingo'); g.innerHTML = '';
+        gameState[pKey].bingo.forEach((icon, i) => {
+            const c = document.createElement('div'); c.className = 'bingo-cell' + (gameState[pKey].marks[i] ? ' marked' : '');
+            c.innerText = icon; g.appendChild(c);
+        });
 
+        // Bag & Rack
         const d = document.getElementById('bag-display');
         const counts = {}; tileBag.forEach(l => counts[l] = (counts[l] || 0) + 1);
         d.innerHTML = '';
         Object.keys(tileDistribution).sort().forEach(l => {
-            let item = document.createElement('div');
-            item.className = 'bag-item';
-            item.innerHTML = `${l === '?' ? '♻️' : l}:${counts[l] || 0}`;
+            let item = document.createElement('div'); item.innerHTML = `${l === '?' ? '♻️' : l}:${counts[l] || 0}`;
             d.appendChild(item);
         });
         renderRack();
@@ -255,7 +233,7 @@
     }
 
     function passTurn() {
-        if(confirm("Pass? Get new letters.")) {
+        if(confirm("Pass Turn? Hand will swap.")) {
             recallTiles(); tileBag.push(...gameState[`p${currentPlayer}`].rack); shuffle(tileBag);
             gameState[`p${currentPlayer}`].rack = drawBalanced(7); switchTurn();
         }
@@ -275,7 +253,7 @@
         if(!word) { alert("Straight line!"); return; }
         if (await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`).then(r => r.ok)) {
             newTilesThisTurn.forEach(t => {
-                if(iconMap[`${t.r}-${t.c}`]) markBingoCard(iconMap[`${t.r}-${t.c}`]);
+                if(iconMap[`${t.r}-${t.c}`]) markBingo(iconMap[`${t.r}-${t.c}`]);
                 document.getElementById(`cell-${t.r}-${t.c}`).style.color = "rgb(0, 0, 0)";
             });
             newTilesThisTurn = []; boardIsFresh = false;
@@ -304,34 +282,25 @@
         return word;
     }
 
-    function markBingoCard(icon) {
-        gameState[`p${currentPlayer}`].bingo.forEach((item, i) => {
-            if(item === icon) document.getElementById(`p${currentPlayer}-bingo-${i}`).classList.add('marked');
+    function markBingo(icon) {
+        const pKey = `p${currentPlayer}`;
+        gameState[pKey].bingo.forEach((item, i) => {
+            if(item === icon) gameState[pKey].marks[i] = true;
         });
         checkBingoWin();
     }
 
     function checkBingoWin() {
-        const g = Array.from({length: 9}, (_, i) => document.getElementById(`p${currentPlayer}-bingo-${i}`).classList.contains('marked'));
+        const marks = gameState[`p${currentPlayer}`].marks;
         const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-        if(wins.some(w => w.every(i => g[i]))) {
+        if(wins.some(w => w.every(i => marks[i]))) {
             gameActive = false;
             document.getElementById('win-message').innerText = `${currentPlayer === 1 ? p1Avatar : p2Avatar} BINGO WINS!`;
             document.getElementById('win-overlay').style.display='flex';
         }
     }
 
-    function renderBingo(p) {
-        const g = document.getElementById(`p${p}-bingo`); g.innerHTML = '';
-        gameState[`p${p}`].bingo.forEach((icon, i) => {
-            const c = document.createElement('div'); c.className = 'bingo-cell'; c.id = `p${p}-bingo-${i}`; c.innerText = icon; g.appendChild(c);
-        });
-    }
-
-    function switchTurn() {
-        currentPlayer = currentPlayer === 1 ? 2 : 1;
-        updateUI();
-    }
+    function switchTurn() { currentPlayer = currentPlayer === 1 ? 2 : 1; updateUI(); }
 </script>
 </body>
 </html>

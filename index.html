@@ -2,52 +2,57 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Scavenger Scrabble: Compact Dashboard</title>
+    <title>Scavenger Scrabble: For Logan!</title>
     <style>
         :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
-        body { font-family: 'Comic Sans MS', sans-serif; background: #fdfcf0; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
+        body { font-family: 'Comic Sans MS', sans-serif; background: #fdfcf0; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
 
         /* SELECTION SCREEN */
         #selection-screen { position: fixed; top:0; left:0; width: 100%; height: 100%; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
+        .input-group { margin-bottom: 20px; text-align: center; }
+        input[type="text"] { padding: 12px; font-size: 1.2rem; border-radius: 10px; border: 3px solid #cbd5e1; font-family: 'Comic Sans MS', sans-serif; width: 250px; text-align: center; }
         .avatar-grid { display: grid; grid-template-columns: repeat(4, 100px); gap: 15px; }
-        .avatar-choice { font-size: 50px; background: white; border: 4px solid #cbd5e1; border-radius: 15px; cursor: pointer; text-align: center; padding: 10px; }
-
-        /* HEADER */
-        .game-header { text-align: center; padding: 8px; border-radius: 15px; width: 60%; color: white; margin-bottom: 10px; }
-        .p1-turn { background: var(--p1-color); }
-        .p2-turn { background: var(--p2-color); }
+        .avatar-choice { font-size: 50px; background: white; border: 4px solid #cbd5e1; border-radius: 15px; cursor: pointer; text-align: center; padding: 10px; transition: 0.2s; }
+        .avatar-choice:hover { transform: scale(1.1); border-color: #94a3b8; }
 
         /* MAIN DASHBOARD LAYOUT */
-        .dashboard { display: flex; gap: 20px; align-items: flex-start; justify-content: center; width: 95%; max-width: 1200px; }
+        .dashboard { display: flex; gap: 20px; align-items: flex-start; justify-content: center; width: 95%; max-width: 1200px; margin-top: 10px; }
 
-        /* LEFT COLUMN: AVATAR + BINGO */
-        .player-sidebar { display: flex; flex-direction: column; align-items: center; gap: 15px; width: 220px; }
-        .current-avatar-display { font-size: 100px; background: white; padding: 15px; border-radius: 25px; border: 5px solid #cbd5e1; box-shadow: 0 6px 0 #cbd5e1; }
-        .bingo-zone { background: #f1f5f9; padding: 10px; border-radius: 20px; border: 3px solid #cbd5e1; text-align: center; }
-        .bingo-grid { display: grid; grid-template-columns: repeat(3, 60px); gap: 6px; }
+        .player-sidebar { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 220px; }
+        .turn-box { width: 100%; padding: 10px; border-radius: 15px; text-align: center; color: white; font-weight: bold; font-size: 1.2rem; box-shadow: 0 4px 0 rgba(0,0,0,0.1); }
+        .p1-active { background: var(--p1-color); }
+        .p2-active { background: var(--p2-color); }
+        
+        .current-avatar-display { font-size: 100px; background: white; padding: 10px; border-radius: 25px; border: 5px solid #cbd5e1; box-shadow: 0 6px 0 #cbd5e1; }
+        .bingo-zone { background: #f1f5f9; padding: 15px; border-radius: 20px; border: 3px solid #cbd5e1; text-align: center; width: 100%; }
+        .bingo-grid { display: grid; grid-template-columns: repeat(3, 60px); gap: 6px; justify-content: center; }
         .bingo-cell { width: 60px; height: 60px; background: white; font-size: 30px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
         .marked { background: #69f0ae !important; border: 3px solid #2e7d32 !important; box-shadow: 0 0 10px #69f0ae; }
 
-        /* CENTER COLUMN: THE BOARD */
         .board { display: grid; grid-template-columns: repeat(13, var(--cell-size)); grid-template-rows: repeat(13, var(--cell-size)); gap: 2px; background: #5d4037; padding: 6px; border: 5px solid #3e2723; border-radius: 10px; }
         .board-cell { width: var(--cell-size); height: var(--cell-size); background: #fffde7; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.1rem; }
         .board-cell.start-square { background-color: #ff5252 !important; border: 2px solid #b71c1c !important; }
         .icon-square::after { content: attr(data-icon); position: absolute; font-size: 16px; bottom: 0; right: 0; opacity: 0.6; }
 
-        /* RIGHT COLUMN: BAG + RACK */
-        .controls-sidebar { display: flex; flex-direction: column; gap: 15px; width: 300px; }
-        .bag-container { background: white; padding: 10px; border-radius: 15px; border: 2px solid #cbd5e1; height: 180px; overflow-y: auto; }
+        .controls-sidebar { display: flex; flex-direction: column; gap: 10px; width: 300px; }
+        .bag-container { background: white; padding: 10px; border-radius: 15px; border: 2px solid #cbd5e1; height: 160px; overflow-y: auto; }
         .bag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; font-size: 0.8rem; }
-        .rack-zone { background: #efebe9; padding: 15px; border-radius: 20px; border: 3px dashed #a1887f; text-align: center; }
+        .rack-zone { background: #efebe9; padding: 10px; border-radius: 20px; border: 3px dashed #a1887f; text-align: center; }
         .tile { display: inline-block; width: 45px; height: 55px; background: #ffe082; border: 3px solid #ff8f00; border-radius: 8px; line-height: 55px; font-size: 28px; font-weight: bold; margin: 4px; cursor: pointer; box-shadow: 0 4px 0 #ff8f00; }
         .tile.selected { background: #ffca28; transform: translateY(-8px); }
         .tile.blank-tile { background: #81c784 !important; border-color: #2e7d32 !important; color: white; }
 
-        .btn-group { display: flex; flex-direction: column; gap: 10px; width: 100%; }
-        button { padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; font-size: 1rem; }
+        .btn-group { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px; }
+        button { padding: 10px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; font-size: 1rem; }
         .btn-finish { background: #4caf50; }
         .btn-recall { background: #78909c; }
         .btn-pass { background: #ff9800; }
+
+        /* RULES & FOOTER */
+        .rules-section { width: 90%; max-width: 800px; background: white; padding: 20px; border-radius: 20px; border: 3px solid #cbd5e1; margin-top: 30px; margin-bottom: 20px; }
+        .rules-section h3 { color: #5d4037; margin-top: 0; text-align: center; }
+        .rules-list { padding-left: 20px; line-height: 1.6; color: #334155; }
+        .footer { text-align: center; font-size: 0.9rem; color: #64748b; margin-bottom: 40px; font-style: italic; }
 
         #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 300; }
     </style>
@@ -55,8 +60,11 @@
 <body>
 
     <div id="selection-screen">
-        <h1>Pick your Animal!</h1>
-        <div id="selection-msg">Player 1 Go!</div>
+        <h1 id="selection-title">Player 1 Set Up</h1>
+        <div class="input-group">
+            <input type="text" id="player-name-input" placeholder="Enter Your Name">
+            <p>Then Pick your Animal!</p>
+        </div>
         <div class="avatar-grid">
             <div class="avatar-choice" onclick="selectAvatar('🐼')">🐼</div>
             <div class="avatar-choice" onclick="selectAvatar('🐯')">🐯</div>
@@ -70,15 +78,11 @@
     </div>
 
     <div id="game-page" style="display:none;">
-        <div id="turn-indicator" class="game-header p1-turn">
-            <h2 id="turn-text" style="margin:0;">Player 1's Turn</h2>
-        </div>
-
         <div class="dashboard">
             <div class="player-sidebar">
+                <div id="turn-box" class="turn-box">Name's Turn</div>
                 <div id="active-avatar" class="current-avatar-display"></div>
                 <div class="bingo-zone">
-                    <h3 id="bingo-label" style="margin:5px;">Bingo Card</h3>
                     <div id="active-bingo" class="bingo-grid"></div>
                 </div>
             </div>
@@ -100,6 +104,22 @@
                 </div>
             </div>
         </div>
+
+        <div class="rules-section">
+            <h3>📖 Rules of the Game</h3>
+            <ul class="rules-list">
+                <li>🌟 **The Goal:** Be the first player to get 3 marks in a row (horizontal, vertical, or diagonal) on your Bingo Card!</li>
+                <li>🏠 **The First Word:** The very first word played must touch the **Red Square** in the middle.</li>
+                <li>🔗 **Make a Chain:** Every new word must use at least one letter that is already on the board.</li>
+                <li>🎨 **Collect Icons:** If you place a letter on a square with a picture (icon), you get to mark that same picture on your Bingo Card!</li>
+                <li>♻️ **The Green Tile:** This is a Magic Tile! It can be any letter you want.</li>
+                <li>🍎 **Vowel Rule:** You will always have at least 2 vowels (A, E, I, O, U) in your hand to help you make words.</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            Designed and created by Logan's parents... anything to get our little Logan to love Scrabble!
+        </div>
     </div>
 
     <div id="win-overlay">
@@ -113,19 +133,28 @@
     const vowels = "AEIOU";
     const tileDistribution = {'E': 12, 'A': 9, 'I': 9, 'O': 8, 'N': 6, 'R': 6, 'T': 6, 'D': 4, 'L': 4, 'S': 4, 'U': 4, 'G': 3, 'B': 2, 'C': 2, 'M': 2, 'P': 2, 'F': 2, 'H': 2, 'V': 2, 'W': 2, 'Y': 2, '?': 2, 'K': 1, 'J': 1, 'X': 1, 'Q': 1, 'Z': 1};
 
-    let p1Avatar = '', p2Avatar = '', tileBag = [], currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
+    let players = { p1: { name: "", avatar: "" }, p2: { name: "", avatar: "" } };
+    let tileBag = [], currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
     let boardIsFresh = true, gameState = { p1: { rack: [], bingo: [], marks: new Array(9).fill(false) }, p2: { rack: [], bingo: [], marks: new Array(9).fill(false) } };
 
     function selectAvatar(emoji) {
-        if (!p1Avatar) { p1Avatar = emoji; document.getElementById('selection-msg').innerText = "Player 2 Go!"; event.target.style.opacity = "0.2"; }
-        else { p2Avatar = emoji; document.getElementById('selection-screen').style.display = 'none'; document.getElementById('game-page').style.display = 'flex'; init(); }
+        let nameInput = document.getElementById('player-name-input');
+        let enteredName = nameInput.value.trim();
+        if (!players.p1.avatar) {
+            players.p1.avatar = emoji; players.p1.name = enteredName || "Player 1";
+            nameInput.value = ""; document.getElementById('selection-title').innerText = "Player 2 Set Up";
+            event.target.style.opacity = "0.2";
+        } else {
+            players.p2.avatar = emoji; players.p2.name = enteredName || "Player 2";
+            document.getElementById('selection-screen').style.display = 'none';
+            document.getElementById('game-page').style.display = 'flex';
+            init();
+        }
     }
 
     function init() {
         for (let l in tileDistribution) { for (let i = 0; i < tileDistribution[l]; i++) tileBag.push(l); }
-        shuffle(tileBag);
-        generateIconMap();
-        createBoard();
+        shuffle(tileBag); generateIconMap(); createBoard();
         for(let p of ['p1', 'p2']) {
             gameState[p].rack = drawBalanced(7);
             gameState[p].bingo = Array.from({length: 9}, () => icons[Math.floor(Math.random()*9)]);
@@ -160,31 +189,28 @@
         const board = document.getElementById('board');
         for(let r=0; r<13; r++) {
             for(let c=0; c<13; c++) {
-                const cell = document.createElement('div');
-                cell.className = 'board-cell';
+                const cell = document.createElement('div'); cell.className = 'board-cell';
                 if(r === 6 && c === 6) cell.classList.add('start-square');
                 if(iconMap[`${r}-${c}`]) { cell.classList.add('icon-square'); cell.setAttribute('data-icon', iconMap[`${r}-${c}`]); }
-                cell.onclick = () => placeTile(r, c);
-                cell.id = `cell-${r}-${c}`;
-                board.appendChild(cell);
+                cell.onclick = () => placeTile(r, c); cell.id = `cell-${r}-${c}`; board.appendChild(cell);
             }
         }
     }
 
     function updateUI() {
         const pKey = `p${currentPlayer}`;
-        document.getElementById('active-avatar').innerText = currentPlayer === 1 ? p1Avatar : p2Avatar;
-        document.getElementById('turn-text').innerText = `Player ${currentPlayer}'s Turn`;
-        document.getElementById('turn-indicator').className = `game-header ${pKey}-turn`;
+        const pData = players[pKey];
+        const turnBox = document.getElementById('turn-box');
+        turnBox.innerText = `${pData.name}'s Turn`;
+        turnBox.className = `turn-box ${pKey}-active`;
+        document.getElementById('active-avatar').innerText = pData.avatar;
         
-        // Render Active Bingo Only
         const g = document.getElementById('active-bingo'); g.innerHTML = '';
         gameState[pKey].bingo.forEach((icon, i) => {
             const c = document.createElement('div'); c.className = 'bingo-cell' + (gameState[pKey].marks[i] ? ' marked' : '');
             c.innerText = icon; g.appendChild(c);
         });
 
-        // Bag & Rack
         const d = document.getElementById('bag-display');
         const counts = {}; tileBag.forEach(l => counts[l] = (counts[l] || 0) + 1);
         d.innerHTML = '';
@@ -198,11 +224,9 @@
     function renderRack() {
         const rD = document.getElementById('current-rack'); rD.innerHTML = '';
         gameState[`p${currentPlayer}`].rack.forEach((l, i) => {
-            const t = document.createElement('div');
-            t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '');
+            const t = document.createElement('div'); t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '');
             if (l === '?') { t.classList.add('blank-tile'); t.innerText = ""; } else { t.innerText = l; }
-            t.onclick = () => { if(gameActive) { selectedTileIndex = i; renderRack(); } };
-            rD.appendChild(t);
+            t.onclick = () => { if(gameActive) { selectedTileIndex = i; renderRack(); } }; rD.appendChild(t);
         });
     }
 
@@ -266,8 +290,7 @@
         const rows = newTilesThisTurn.map(t => t.r), cols = newTilesThisTurn.map(t => t.c);
         const isH = rows.every(r => r === rows[0]), isV = cols.every(c => c === cols[0]);
         if (!isH && !isV) return null;
-        let word = "";
-        let r = rows[0], c = cols[0];
+        let word = ""; let r = rows[0], c = cols[0];
         if (isH) {
             let minC = Math.min(...cols), maxC = Math.max(...cols);
             while(minC > 0 && document.getElementById(`cell-${r}-${minC-1}`).innerText !== "") minC--;
@@ -284,9 +307,7 @@
 
     function markBingo(icon) {
         const pKey = `p${currentPlayer}`;
-        gameState[pKey].bingo.forEach((item, i) => {
-            if(item === icon) gameState[pKey].marks[i] = true;
-        });
+        gameState[pKey].bingo.forEach((item, i) => { if(item === icon) gameState[pKey].marks[i] = true; });
         checkBingoWin();
     }
 
@@ -294,8 +315,8 @@
         const marks = gameState[`p${currentPlayer}`].marks;
         const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
         if(wins.some(w => w.every(i => marks[i]))) {
-            gameActive = false;
-            document.getElementById('win-message').innerText = `${currentPlayer === 1 ? p1Avatar : p2Avatar} BINGO WINS!`;
+            gameActive = false; const p = players[`p${currentPlayer}`];
+            document.getElementById('win-message').innerText = `${p.avatar} ${p.name} BINGO WINS!`;
             document.getElementById('win-overlay').style.display='flex';
         }
     }

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Scavenger Scrabble: Weighted Edition</title>
+    <title>Scavenger Scrabble: 3x3 Bingo & Tile Bag</title>
     <style>
         :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
         body { font-family: 'Comic Sans MS', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
@@ -11,18 +11,25 @@
         .p1-turn { background: var(--p1-color); }
         .p2-turn { background: var(--p2-color); }
 
-        .main-layout { display: flex; gap: 40px; align-items: flex-start; margin-top: 10px; }
+        .main-layout { display: flex; gap: 30px; align-items: flex-start; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
         
+        /* Board Styles */
         .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; border-radius: 8px; }
-        .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.2rem; box-sizing: border-box; }
-        
+        .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.2rem; }
         .board-cell.start-square { background-color: #ff4d4d !important; border: 2px solid #b30000 !important; }
         .icon-square::after { content: attr(data-icon); position: absolute; font-size: 14px; bottom: 0; right: 0; opacity: 0.6; }
 
-        .bingo-grid { display: grid; grid-template-columns: repeat(4, 60px); gap: 5px; background: #cbd5e1; padding: 10px; border-radius: 10px; }
-        .bingo-cell { width: 60px; height: 60px; background: white; font-size: 30px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+        /* Sidebar: Bingo & Tile Bag */
+        .sidebar { display: flex; flex-direction: column; gap: 20px; min-width: 250px; }
+        
+        .bingo-grid { display: grid; grid-template-columns: repeat(3, 70px); gap: 8px; background: #cbd5e1; padding: 12px; border-radius: 10px; }
+        .bingo-cell { width: 70px; height: 70px; background: white; font-size: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
         .marked { background: #4ade80 !important; box-shadow: 0 0 15px #4ade80; }
 
+        .bag-counter { background: white; padding: 15px; border-radius: 10px; border: 2px solid #cbd5e1; font-size: 0.9rem; max-height: 300px; overflow-y: auto; }
+        .bag-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: left; }
+
+        /* Bottom UI */
         .rack-container { margin: 20px; padding: 15px; background: #e2e8f0; border-radius: 10px; width: 600px; text-align: center; border: 2px dashed #94a3b8; }
         .tile { display: inline-block; width: 45px; height: 50px; background: #fef3c7; border: 2px solid #d97706; border-radius: 5px; line-height: 50px; font-size: 28px; font-weight: bold; margin: 5px; cursor: pointer; }
         .tile.selected { background: #fbbf24; transform: translateY(-8px); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
@@ -41,7 +48,7 @@
 <body>
 
     <div id="win-overlay">
-        <h1>PLAYER <span id="winner-num"></span> BINGO!</h1>
+        <h1>PLAYER <span id="winner-num"></span> BINGO! 🎉</h1>
         <button onclick="location.reload()" style="background:#059669; padding: 15px 30px;">Play Again</button>
     </div>
 
@@ -51,9 +58,16 @@
 
     <div class="main-layout">
         <div id="board" class="board"></div>
-        <div class="bingo-area">
-            <div id="p1-bingo-zone"><h3>P1 Bingo</h3><div id="p1-bingo" class="bingo-grid"></div></div>
-            <div id="p2-bingo-zone" class="hidden"><h3>P2 Bingo</h3><div id="p2-bingo" class="bingo-grid"></div></div>
+        
+        <div class="sidebar">
+            <div id="p1-bingo-zone"><h3>Player 1 Bingo (3x3)</h3><div id="p1-bingo" class="bingo-grid"></div></div>
+            <div id="p2-bingo-zone" class="hidden"><h3>Player 2 Bingo (3x3)</h3><div id="p2-bingo" class="bingo-grid"></div></div>
+            
+            <div class="bag-counter">
+                <strong>Remaining in Bag:</strong>
+                <hr>
+                <div id="bag-display" class="bag-grid"></div>
+            </div>
         </div>
     </div>
 
@@ -70,53 +84,75 @@
     const icons = ['🍎', '🚀', '🦁', '🍕', '💎', '🌈', '🎸', '🍦', '🎈'];
     const vowels = "AEIOU";
     
-    // Traditional Scrabble Weighting Pool
-    const weightedLetters = [
-        ...Array(12).fill('E'),
-        ...Array(9).fill('A'), ...Array(9).fill('I'),
-        ...Array(8).fill('O'),
-        ...Array(6).fill('N'), ...Array(6).fill('R'), ...Array(6).fill('T'),
-        ...Array(4).fill('D'), ...Array(4).fill('L'), ...Array(4).fill('S'), ...Array(4).fill('U'),
-        ...Array(3).fill('G'),
-        ...Array(2).fill('B'), ...Array(2).fill('C'), ...Array(2).fill('M'), ...Array(2).fill('P'), 
-        ...Array(2).fill('F'), ...Array(2).fill('H'), ...Array(2).fill('V'), ...Array(2).fill('W'), 
-        ...Array(2).fill('Y'), ...Array(2).fill('?'), // '?' represents blank
-        ...Array(1).fill('K'), ...Array(1).fill('J'), ...Array(1).fill('X'), ...Array(1).fill('Q'), ...Array(1).fill('Z')
-    ];
+    // Distribution counts for 100 tiles
+    const tileDistribution = {
+        'E': 12, 'A': 9, 'I': 9, 'O': 8, 'N': 6, 'R': 6, 'T': 6,
+        'D': 4, 'L': 4, 'S': 4, 'U': 4, 'G': 3, 'B': 2, 'C': 2,
+        'M': 2, 'P': 2, 'F': 2, 'H': 2, 'V': 2, 'W': 2, 'Y': 2,
+        '?': 2, 'K': 1, 'J': 1, 'X': 1, 'Q': 1, 'Z': 1
+    };
 
+    let tileBag = [];
     let currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
     let boardIsFresh = true;
     let gameState = { p1: { rack: [], bingo: [] }, p2: { rack: [], bingo: [] } };
 
     function init() {
+        // Build the bag from distribution
+        for (let letter in tileDistribution) {
+            for (let i = 0; i < tileDistribution[letter]; i++) tileBag.push(letter);
+        }
+        shuffle(tileBag);
+
         generateIconMap();
         createBoard();
+        
         for(let p of ['p1', 'p2']) {
-            gameState[p].rack = generateBalancedHand();
-            gameState[p].bingo = Array.from({length: 16}, () => icons[Math.floor(Math.random()*9)]);
+            gameState[p].rack = drawBalanced(7);
+            gameState[p].bingo = Array.from({length: 9}, () => icons[Math.floor(Math.random()*9)]);
         }
+        
+        updateBagDisplay();
         renderBingo(1); renderBingo(2); renderRack();
     }
 
-    function generateBalancedHand(existingRack = []) {
-        let rack = [...existingRack];
-        while(rack.length < 7) {
-            rack.push(weightedLetters[Math.floor(Math.random() * weightedLetters.length)]);
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[array.length - 1]] = [array[array.length - 1], array[i]];
         }
-        let vCount = rack.filter(l => vowels.includes(l)).length;
-        while(vCount < 2) {
-            let nvIdx = rack.findIndex(l => !vowels.includes(l) && l !== '?');
-            if(nvIdx !== -1) {
-                rack[nvIdx] = vowels[Math.floor(Math.random() * 5)];
-                vCount++;
-            } else break;
+    }
+
+    function drawBalanced(count, existing = []) {
+        let hand = [...existing];
+        while(hand.length < count && tileBag.length > 0) {
+            hand.push(tileBag.pop());
         }
-        return rack;
+        
+        // Vowel guard: if hand has < 2 vowels, swap non-vowels for vowels from the bag if possible
+        let vCount = hand.filter(l => vowels.includes(l)).length;
+        if(vCount < 2 && hand.length >= 2) {
+            for(let i=0; i < hand.length && vCount < 2; i++) {
+                if(!vowels.includes(hand[i]) && hand[i] !== '?') {
+                    // Look for a vowel in the bag to swap
+                    let vowelIdx = tileBag.findIndex(l => vowels.includes(l));
+                    if(vowelIdx !== -1) {
+                        let oldTile = hand[i];
+                        hand[i] = tileBag.splice(vowelIdx, 1)[0];
+                        tileBag.push(oldTile);
+                        shuffle(tileBag);
+                        vCount++;
+                    }
+                }
+            }
+        }
+        updateBagDisplay();
+        return hand;
     }
 
     function generateIconMap() {
         let spots = new Set();
-        while(spots.size < 30) {
+        while(spots.size < 40) { // Increased to 40
             let s = Math.floor(Math.random() * 225);
             if(s !== 112) spots.add(s); 
         }
@@ -141,18 +177,27 @@
         }
     }
 
+    function updateBagDisplay() {
+        const display = document.getElementById('bag-display');
+        const counts = {};
+        tileBag.forEach(l => counts[l] = (counts[l] || 0) + 1);
+        
+        display.innerHTML = '';
+        Object.keys(tileDistribution).sort().forEach(l => {
+            let item = document.createElement('div');
+            item.innerHTML = `${l === '?' ? '♻️' : l}: <strong>${counts[l] || 0}</strong>`;
+            display.appendChild(item);
+        });
+    }
+
     function renderRack() {
         const rackDiv = document.getElementById('current-rack');
         rackDiv.innerHTML = '';
         gameState[`p${currentPlayer}`].rack.forEach((letter, i) => {
             const t = document.createElement('div');
             t.className = 'tile' + (selectedTileIndex === i ? ' selected' : '');
-            if (letter === '?') {
-                t.classList.add('blank-tile');
-                t.innerText = ""; // Blank on rack
-            } else {
-                t.innerText = letter;
-            }
+            if (letter === '?') { t.classList.add('blank-tile'); t.innerText = ""; }
+            else { t.innerText = letter; }
             t.onclick = () => { if(gameActive) { selectedTileIndex = i; renderRack(); } };
             rackDiv.appendChild(t);
         });
@@ -164,21 +209,14 @@
         if (selectedTileIndex !== null && cell.innerText === "") {
             let letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
             let isBlank = letter === '?';
-
             if(isBlank) {
                 let choice = prompt("What letter should this blank be?").toUpperCase();
-                if(choice && choice.length === 1 && /[A-Z]/.test(choice)) {
-                    letter = choice;
-                } else {
-                    alert("Please enter a single letter A-Z.");
-                    return;
-                }
+                if(choice && choice.length === 1 && /[A-Z]/.test(choice)) letter = choice;
+                else return;
             }
-
             cell.innerText = letter;
             cell.style.color = "#2563eb"; 
-            if(isBlank) cell.style.backgroundColor = "#dcfce7"; // Light green background on board
-
+            if(isBlank) cell.style.backgroundColor = "#dcfce7";
             newTilesThisTurn.push({r, c, letter, wasBlank: isBlank});
             gameState[`p${currentPlayer}`].rack.splice(selectedTileIndex, 1);
             selectedTileIndex = null;
@@ -189,73 +227,47 @@
     function recallTiles() {
         newTilesThisTurn.forEach(tile => {
             const cell = document.getElementById(`cell-${tile.r}-${tile.c}`);
-            cell.innerText = "";
-            cell.style.color = "";
-            cell.style.backgroundColor = "";
+            cell.innerText = ""; cell.style.color = ""; cell.style.backgroundColor = "";
             gameState[`p${currentPlayer}`].rack.push(tile.wasBlank ? '?' : tile.letter);
         });
-        newTilesThisTurn = [];
-        selectedTileIndex = null;
-        renderRack();
+        newTilesThisTurn = []; selectedTileIndex = null; renderRack();
     }
 
     function passTurn() {
-        if(confirm("Pass? Get 7 new tiles.")) {
+        if(confirm("Pass? Discard hand and draw 7 new.")) {
             recallTiles();
-            gameState[`p${currentPlayer}`].rack = generateBalancedHand([]);
+            // Put current hand back in bag and shuffle
+            tileBag.push(...gameState[`p${currentPlayer}`].rack);
+            shuffle(tileBag);
+            gameState[`p${currentPlayer}`].rack = drawBalanced(7);
             switchTurn();
         }
     }
 
     async function finishTurn() {
         if(newTilesThisTurn.length === 0) return;
-
-        let validPlacement = false;
-        if (boardIsFresh) {
-            validPlacement = newTilesThisTurn.some(t => t.r === 7 && t.c === 7);
-            if (!validPlacement) { alert("The first word must cover the red center square!"); return; }
-        } else {
-            validPlacement = newTilesThisTurn.some(t => {
-                const neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
-                return neighbors.some(([dr, dc]) => {
-                    let nr = t.r + dr, nc = t.c + dc;
-                    if(nr>=0 && nr<15 && nc>=0 && nc<15) {
-                        let neighborCell = document.getElementById(`cell-${nr}-${nc}`);
-                        return neighborCell.innerText !== "" && neighborCell.style.color === "rgb(0, 0, 0)";
-                    }
-                    return false;
+        let isConnected = boardIsFresh ? newTilesThisTurn.some(t => t.r === 7 && t.c === 7) : 
+            newTilesThisTurn.some(t => {
+                return [[-1,0],[1,0],[0,-1],[0,1]].some(([dr, dc]) => {
+                    let n = document.getElementById(`cell-${t.r+dr}-${t.c+dc}`);
+                    return n && n.innerText !== "" && n.style.color === "rgb(0, 0, 0)";
                 });
             });
-            if (!validPlacement) { alert("Word must connect to an existing letter!"); return; }
-        }
+
+        if(!isConnected) { alert(boardIsFresh ? "Start at the red square!" : "Must connect to a black tile!"); return; }
 
         const word = scanForWord();
-        if (!word) { alert("Tiles must be in a single straight line!"); return; }
+        if(!word) { alert("Straight lines only!"); return; }
 
-        const isValid = await verifyWithAPI(word);
-        if (isValid) {
-            newTilesThisTurn.forEach(tile => {
-                const icon = iconMap[`${tile.r}-${tile.c}`];
-                if(icon) markBingoCard(icon);
-                document.getElementById(`cell-${tile.r}-${tile.c}`).style.color = "rgb(0, 0, 0)";
+        if (await verifyWithAPI(word)) {
+            newTilesThisTurn.forEach(t => {
+                if(iconMap[`${t.r}-${t.c}`]) markBingoCard(iconMap[`${t.r}-${t.c}`]);
+                document.getElementById(`cell-${t.r}-${t.c}`).style.color = "rgb(0, 0, 0)";
             });
-            newTilesThisTurn = [];
-            boardIsFresh = false;
-            gameState[`p${currentPlayer}`].rack = generateBalancedHand(gameState[`p${currentPlayer}`].rack);
+            newTilesThisTurn = []; boardIsFresh = false;
+            gameState[`p${currentPlayer}`].rack = drawBalanced(7, gameState[`p${currentPlayer}`].rack);
             switchTurn();
-        } else {
-            alert(`❌ "${word}" is not a word!`);
-        }
-    }
-
-    function switchTurn() {
-        currentPlayer = currentPlayer === 1 ? 2 : 1;
-        document.getElementById('turn-indicator').className = `game-header p${currentPlayer}-turn`;
-        document.getElementById('turn-text').innerText = `Player ${currentPlayer}'s Turn`;
-        document.getElementById('p1-bingo-zone').classList.toggle('hidden');
-        document.getElementById('p2-bingo-zone').classList.toggle('hidden');
-        selectedTileIndex = null;
-        renderRack();
+        } else alert(`❌ "${word}" is not a word!`);
     }
 
     function scanForWord() {
@@ -272,7 +284,7 @@
             let c = cols[0], minR = Math.min(...rows), maxR = Math.max(...rows);
             while(minR > 0 && document.getElementById(`cell-${minR-1}-${c}`).innerText !== "") minR--;
             while(maxR < 14 && document.getElementById(`cell-${maxR+1}-${c}`).innerText !== "") maxR++;
-            for(let r = minRow = minR; r <= maxR; r++) word += document.getElementById(`cell-${r}-${c}`).innerText;
+            for(let r = minR; r <= maxR; r++) word += document.getElementById(`cell-${r}-${c}`).innerText;
         }
         return word;
     }
@@ -290,16 +302,16 @@
     }
 
     function checkBingoWin() {
-        const p = currentPlayer, grid = [];
-        for(let i=0; i<16; i++) grid.push(document.getElementById(`p${p}-bingo-${i}`).classList.contains('marked'));
-        for(let i=0; i<4; i++) {
-            let rW=true, cW=true;
-            for(let j=0; j<4; j++) { if(!grid[i*4+j]) rW=false; if(!grid[j*4+i]) cW=false; }
-            if(rW || cW) { 
-                gameActive = false; 
-                document.getElementById('winner-num').innerText = currentPlayer;
-                document.getElementById('win-overlay').style.display='flex'; 
+        const grid = Array.from({length: 9}, (_, i) => document.getElementById(`p${currentPlayer}-bingo-${i}`).classList.contains('marked'));
+        for(let i=0; i<3; i++) {
+            if((grid[i*3] && grid[i*3+1] && grid[i*3+2]) || (grid[i] && grid[i+3] && grid[i+6])) {
+                gameActive = false; document.getElementById('winner-num').innerText = currentPlayer;
+                document.getElementById('win-overlay').style.display='flex';
             }
+        }
+        if((grid[0] && grid[4] && grid[8]) || (grid[2] && grid[4] && grid[6])) {
+            gameActive = false; document.getElementById('winner-num').innerText = currentPlayer;
+            document.getElementById('win-overlay').style.display='flex';
         }
     }
 
@@ -308,6 +320,15 @@
         gameState[`p${p}`].bingo.forEach((icon, i) => {
             const c = document.createElement('div'); c.className = 'bingo-cell'; c.id = `p${p}-bingo-${i}`; c.innerText = icon; g.appendChild(c);
         });
+    }
+
+    function switchTurn() {
+        currentPlayer = currentPlayer === 1 ? 2 : 1;
+        document.getElementById('turn-indicator').className = `game-header p${currentPlayer}-turn`;
+        document.getElementById('turn-text').innerText = `Player ${currentPlayer}'s Turn`;
+        document.getElementById('p1-bingo-zone').classList.toggle('hidden');
+        document.getElementById('p2-bingo-zone').classList.toggle('hidden');
+        selectedTileIndex = null; renderRack();
     }
 
     init();

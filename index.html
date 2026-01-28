@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Scavenger Scrabble: 3x3 Bingo Edition</title>
+    <title>Scavenger Scrabble: 13x13 Board & 3x3 Bingo</title>
     <style>
         :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
         body { font-family: 'Comic Sans MS', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
@@ -13,14 +13,15 @@
 
         .main-layout { display: flex; gap: 30px; align-items: flex-start; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
         
-        .board { display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(15, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; border-radius: 8px; }
+        /* 13x13 Main Grid */
+        .board { display: grid; grid-template-columns: repeat(13, var(--cell-size)); grid-template-rows: repeat(13, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; border-radius: 8px; }
         .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.2rem; }
         .board-cell.start-square { background-color: #ff4d4d !important; border: 2px solid #b30000 !important; }
         .icon-square::after { content: attr(data-icon); position: absolute; font-size: 14px; bottom: 0; right: 0; opacity: 0.6; }
 
         .sidebar { display: flex; flex-direction: column; gap: 20px; min-width: 250px; }
         
-        /* Revised 3x3 Bingo Grid */
+        /* Strict 3x3 Bingo Grid */
         .bingo-grid { display: grid; grid-template-columns: repeat(3, 80px); gap: 10px; background: #cbd5e1; padding: 15px; border-radius: 10px; }
         .bingo-cell { width: 80px; height: 80px; background: white; font-size: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
         .marked { background: #4ade80 !important; box-shadow: 0 0 15px #4ade80; border: 2px solid #166534; }
@@ -62,7 +63,7 @@
             <div id="p2-bingo-zone" class="hidden"><h3>P2 Bingo (3x3)</h3><div id="p2-bingo" class="bingo-grid"></div></div>
             
             <div class="bag-counter">
-                <strong>Remaining in Bag:</strong>
+                <strong>In Bag:</strong>
                 <hr>
                 <div id="bag-display" class="bag-grid"></div>
             </div>
@@ -124,20 +125,20 @@
 
     function generateIconMap() {
         let spots = new Set();
-        while(spots.size < 50) { // Increased to 50
-            let s = Math.floor(Math.random() * 225);
-            if(s !== 112) spots.add(s); 
+        while(spots.size < 50) { 
+            let s = Math.floor(Math.random() * 169); // 13x13 = 169
+            if(s !== 84) spots.add(s); // Center of 13x13 is index 84 (6,6)
         }
-        spots.forEach(s => iconMap[`${Math.floor(s/15)}-${s%15}`] = icons[Math.floor(Math.random()*9)]);
+        spots.forEach(s => iconMap[`${Math.floor(s/13)}-${s%13}`] = icons[Math.floor(Math.random()*9)]);
     }
 
     function createBoard() {
         const board = document.getElementById('board');
-        for(let r=0; r<15; r++) {
-            for(let c=0; c<15; c++) {
+        for(let r=0; r<13; r++) {
+            for(let c=0; c<13; c++) {
                 const cell = document.createElement('div');
                 cell.className = 'board-cell';
-                if(r === 7 && c === 7) cell.classList.add('start-square');
+                if(r === 6 && c === 6) cell.classList.add('start-square');
                 if(iconMap[`${r}-${c}`]) { cell.classList.add('icon-square'); cell.setAttribute('data-icon', iconMap[`${r}-${c}`]); }
                 cell.onclick = () => placeTile(r, c);
                 cell.id = `cell-${r}-${c}`;
@@ -204,14 +205,14 @@
 
     async function finishTurn() {
         if(newTilesThisTurn.length === 0) return;
-        let isC = boardIsFresh ? newTilesThisTurn.some(t => t.r === 7 && t.c === 7) : 
+        let isC = boardIsFresh ? newTilesThisTurn.some(t => t.r === 6 && t.c === 6) : 
             newTilesThisTurn.some(t => {
                 return [[-1,0],[1,0],[0,-1],[0,1]].some(([dr, dc]) => {
                     let n = document.getElementById(`cell-${t.r+dr}-${t.c+dc}`);
                     return n && n.innerText !== "" && n.style.color === "rgb(0, 0, 0)";
                 });
             });
-        if(!isC) { alert(boardIsFresh ? "Start at red!" : "Connect to a black tile!"); return; }
+        if(!isC) { alert(boardIsFresh ? "Start at red square (center)!" : "Connect to a black tile!"); return; }
         const word = scanForWord();
         if(!word) { alert("Straight lines only!"); return; }
         if (await verifyWithAPI(word)) {
@@ -233,12 +234,12 @@
         if (isH) {
             let r = rows[0], minC = Math.min(...cols), maxC = Math.max(...cols);
             while(minC > 0 && document.getElementById(`cell-${r}-${minC-1}`).innerText !== "") minC--;
-            while(maxC < 14 && document.getElementById(`cell-${r}-${maxC+1}`).innerText !== "") maxC++;
+            while(maxC < 12 && document.getElementById(`cell-${r}-${maxC+1}`).innerText !== "") maxC++;
             for(let c = minC; c <= maxC; c++) word += document.getElementById(`cell-${r}-${c}`).innerText;
         } else {
             let c = cols[0], minR = Math.min(...rows), maxR = Math.max(...rows);
             while(minR > 0 && document.getElementById(`cell-${minR-1}-${c}`).innerText !== "") minR--;
-            while(maxR < 14 && document.getElementById(`cell-${maxR+1}-${c}`).innerText !== "") maxR++;
+            while(maxR < 12 && document.getElementById(`cell-${maxR+1}-${c}`).innerText !== "") maxR++;
             for(let r = minR; r <= maxR; r++) word += document.getElementById(`cell-${r}-${c}`).innerText;
         }
         return word;

@@ -2,57 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scavenger Scrabble: 13x13 Board & 3x3 Bingo</title>
     <style>
-        :root { --cell-size: 40px; --p1-color: #3b82f6; --p2-color: #ef4444; }
+        :root { --cell-size: 42px; --p1-color: #3b82f6; --p2-color: #ef4444; }
         body { font-family: 'Comic Sans MS', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
         
-        .game-header { text-align: center; margin: 10px; padding: 10px; border-radius: 10px; width: 80%; color: white; }
-        .p1-turn { background: var(--p1-color); }
-        .p2-turn { background: var(--p2-color); }
+        .game-header { text-align: center; margin: 10px; padding: 15px; border-radius: 12px; width: 80%; color: white; font-size: 1.5rem; }
+        .p1-turn { background: var(--p1-color); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4); }
+        .p2-turn { background: var(--p2-color); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); }
 
-        .main-layout { display: flex; gap: 30px; align-items: flex-start; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+        .main-layout { display: flex; gap: 30px; align-items: flex-start; margin-top: 20px; justify-content: center; }
         
-        /* 13x13 Main Grid */
-        .board { display: grid; grid-template-columns: repeat(13, var(--cell-size)); grid-template-rows: repeat(13, var(--cell-size)); gap: 2px; background: #475569; padding: 5px; border: 4px solid #1e293b; border-radius: 8px; }
-        .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.2rem; }
+        /* STRICT 13x13 BOARD */
+        .board { display: grid; grid-template-columns: repeat(13, var(--cell-size)); grid-template-rows: repeat(13, var(--cell-size)); gap: 2px; background: #475569; padding: 6px; border: 5px solid #1e293b; border-radius: 10px; }
+        .board-cell { width: var(--cell-size); height: var(--cell-size); background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; position: relative; font-size: 1.3rem; }
+        
+        /* CENTER SQUARE (6,6) */
         .board-cell.start-square { background-color: #ff4d4d !important; border: 2px solid #b30000 !important; }
-        .icon-square::after { content: attr(data-icon); position: absolute; font-size: 14px; bottom: 0; right: 0; opacity: 0.6; }
+        .icon-square::after { content: attr(data-icon); position: absolute; font-size: 16px; bottom: 1px; right: 1px; opacity: 0.7; }
 
-        .sidebar { display: flex; flex-direction: column; gap: 20px; min-width: 250px; }
+        .sidebar { display: flex; flex-direction: column; gap: 20px; min-width: 280px; }
         
-        /* Strict 3x3 Bingo Grid */
-        .bingo-grid { display: grid; grid-template-columns: repeat(3, 80px); gap: 10px; background: #cbd5e1; padding: 15px; border-radius: 10px; }
-        .bingo-cell { width: 80px; height: 80px; background: white; font-size: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
-        .marked { background: #4ade80 !important; box-shadow: 0 0 15px #4ade80; border: 2px solid #166534; }
+        /* STRICT 3x3 BINGO GRID */
+        .bingo-grid { display: grid; grid-template-columns: repeat(3, 90px); grid-template-rows: repeat(3, 90px); gap: 10px; background: #cbd5e1; padding: 15px; border-radius: 15px; border: 3px solid #94a3b8; }
+        .bingo-cell { width: 90px; height: 90px; background: white; font-size: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px; transition: 0.3s; }
+        .marked { background: #4ade80 !important; box-shadow: 0 0 20px #4ade80; border: 3px solid #166534; transform: scale(1.05); }
 
-        .bag-counter { background: white; padding: 15px; border-radius: 10px; border: 2px solid #cbd5e1; font-size: 0.8rem; }
-        .bag-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        .bag-counter { background: white; padding: 15px; border-radius: 12px; border: 2px solid #cbd5e1; font-size: 0.85rem; }
+        .bag-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 
-        .rack-container { margin: 20px; padding: 15px; background: #e2e8f0; border-radius: 10px; width: 600px; text-align: center; border: 2px dashed #94a3b8; }
-        .tile { display: inline-block; width: 45px; height: 50px; background: #fef3c7; border: 2px solid #d97706; border-radius: 5px; line-height: 50px; font-size: 28px; font-weight: bold; margin: 5px; cursor: pointer; }
-        .tile.selected { background: #fbbf24; transform: translateY(-8px); box-shadow: 0 8px 15px rgba(0,0,0,0.2); }
+        .rack-container { margin: 25px; padding: 20px; background: #e2e8f0; border-radius: 15px; width: 650px; text-align: center; border: 3px dashed #94a3b8; }
+        .tile { display: inline-block; width: 50px; height: 55px; background: #fef3c7; border: 3px solid #d97706; border-radius: 8px; line-height: 55px; font-size: 32px; font-weight: bold; margin: 6px; cursor: pointer; transition: 0.2s; }
+        .tile.selected { background: #fbbf24; transform: translateY(-10px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); border-color: #92400e; }
         .tile.blank-tile { background: #22c55e !important; border-color: #166534 !important; color: white; }
         
-        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
-        button { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; }
+        .btn-group { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+        button { padding: 14px 24px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; font-size: 1.1rem; transition: 0.2s; }
         .btn-finish { background: #059669; }
         .btn-recall { background: #64748b; }
         .btn-pass { background: #f59e0b; }
+        button:hover { filter: brightness(1.1); transform: scale(1.03); }
         
-        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 100; }
+        #win-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 100; text-align: center; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
     <div id="win-overlay">
-        <h1>PLAYER <span id="winner-num"></span> BINGO! 🎉</h1>
-        <button onclick="location.reload()" style="background:#059669; padding: 15px 30px;">Play Again</button>
+        <h1 style="font-size: 4rem;">PLAYER <span id="winner-num"></span> BINGO! 🎉</h1>
+        <button onclick="location.reload()" style="background:#059669; padding: 20px 40px; font-size: 1.5rem;">Play Again</button>
     </div>
 
     <div id="turn-indicator" class="game-header p1-turn">
-        <h2 id="turn-text">Player 1's Turn</h2>
+        <h2 id="turn-text" style="margin:0;">Player 1's Turn</h2>
     </div>
 
     <div class="main-layout">
@@ -63,7 +67,7 @@
             <div id="p2-bingo-zone" class="hidden"><h3>P2 Bingo (3x3)</h3><div id="p2-bingo" class="bingo-grid"></div></div>
             
             <div class="bag-counter">
-                <strong>In Bag:</strong>
+                <strong>Letters in Bag:</strong>
                 <hr>
                 <div id="bag-display" class="bag-grid"></div>
             </div>
@@ -126,14 +130,15 @@
     function generateIconMap() {
         let spots = new Set();
         while(spots.size < 50) { 
-            let s = Math.floor(Math.random() * 169); // 13x13 = 169
-            if(s !== 84) spots.add(s); // Center of 13x13 is index 84 (6,6)
+            let s = Math.floor(Math.random() * 169); // 13x13 board
+            if(s !== 84) spots.add(s); // Center is index 84
         }
         spots.forEach(s => iconMap[`${Math.floor(s/13)}-${s%13}`] = icons[Math.floor(Math.random()*9)]);
     }
 
     function createBoard() {
         const board = document.getElementById('board');
+        board.innerHTML = '';
         for(let r=0; r<13; r++) {
             for(let c=0; c<13; c++) {
                 const cell = document.createElement('div');
@@ -176,7 +181,7 @@
             let letter = gameState[`p${currentPlayer}`].rack[selectedTileIndex];
             let isB = letter === '?';
             if(isB) {
-                let ch = prompt("Blank tile letter?").toUpperCase();
+                let ch = prompt("What letter is the blank tile?").toUpperCase();
                 if(ch && ch.length === 1 && /[A-Z]/.test(ch)) letter = ch; else return;
             }
             cell.innerText = letter; cell.style.color = "#2563eb"; 
@@ -197,7 +202,7 @@
     }
 
     function passTurn() {
-        if(confirm("Pass and get 7 new tiles?")) {
+        if(confirm("Pass? All tiles in hand will be swapped.")) {
             recallTiles(); tileBag.push(...gameState[`p${currentPlayer}`].rack); shuffle(tileBag);
             gameState[`p${currentPlayer}`].rack = drawBalanced(7); switchTurn();
         }
@@ -212,7 +217,7 @@
                     return n && n.innerText !== "" && n.style.color === "rgb(0, 0, 0)";
                 });
             });
-        if(!isC) { alert(boardIsFresh ? "Start at red square (center)!" : "Connect to a black tile!"); return; }
+        if(!isC) { alert(boardIsFresh ? "First word must touch center RED square!" : "Word must connect to existing black letters!"); return; }
         const word = scanForWord();
         if(!word) { alert("Straight lines only!"); return; }
         if (await verifyWithAPI(word)) {

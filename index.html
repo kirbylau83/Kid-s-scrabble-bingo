@@ -11,9 +11,34 @@
         #selection-screen { position: absolute; top:0; left:0; width: 100%; min-height: 100%; background: #fdfcf0; display: flex; flex-direction: column; align-items: center; padding: 40px 0; z-index: 200; overflow-y: auto; }
         .input-group { margin-bottom: 20px; text-align: center; }
         input[type="text"] { padding: 12px; font-size: 1.2rem; border-radius: 10px; border: 3px solid #cbd5e1; font-family: 'Comic Sans MS', sans-serif; width: 250px; text-align: center; }
-        .avatar-grid { display: grid; grid-template-columns: repeat(4, 100px); gap: 15px; margin-bottom: 30px; }
-        .avatar-choice { font-size: 50px; background: white; border: 4px solid #cbd5e1; border-radius: 15px; cursor: pointer; text-align: center; padding: 10px; transition: 0.2s; }
+        .avatar-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 100px); /* Changed to 3 columns for 6 avatars */
+            gap: 15px; 
+            margin-bottom: 30px; 
+            justify-content: center; /* Center the grid */
+        }
+        .avatar-choice { 
+            width: 90px; /* Adjusted size to fit images better */
+            height: 90px; /* Adjusted size to fit images better */
+            background-color: white; 
+            border: 4px solid #cbd5e1; 
+            border-radius: 50%; /* Make them perfectly round */
+            cursor: pointer; 
+            display: flex; /* Use flexbox to center image */
+            align-items: center; 
+            justify-content: center; 
+            overflow: hidden; /* Hide parts of the image that go outside the circle */
+            transition: 0.2s; 
+            padding: 0; /* Remove padding */
+        }
         .avatar-choice:hover { transform: scale(1.1); border-color: #94a3b8; }
+        .avatar-choice img {
+            width: 100%; /* Make image fill the circle */
+            height: 100%;
+            object-fit: contain; /* Ensure the whole image is visible, scale down if necessary */
+            border-radius: 50%; /* Keep image round within its container */
+        }
 
         /* RULES & FOOTER (ON LANDING PAGE) */
         .rules-section { width: 90%; max-width: 600px; background: white; padding: 20px; border-radius: 20px; border: 3px solid #cbd5e1; margin-top: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -29,7 +54,26 @@
         .p1-active { background: var(--p1-color); }
         .p2-active { background: var(--p2-color); }
         
-        .current-avatar-display { font-size: 100px; background: white; padding: 10px; border-radius: 25px; border: 5px solid #cbd5e1; box-shadow: 0 6px 0 #cbd5e1; }
+        .current-avatar-display { 
+            font-size: 100px; 
+            background: white; 
+            padding: 10px; 
+            border-radius: 25px; 
+            border: 5px solid #cbd5e1; 
+            box-shadow: 0 6px 0 #cbd5e1; 
+            width: 120px; /* Set a fixed width/height for avatar display */
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .current-avatar-display img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 50%;
+        }
         .bingo-zone { background: #f1f5f9; padding: 15px; border-radius: 20px; border: 3px solid #cbd5e1; text-align: center; width: 100%; }
         .bingo-grid { display: grid; grid-template-columns: repeat(3, 60px); gap: 6px; justify-content: center; }
         .bingo-cell { width: 60px; height: 60px; background: white; font-size: 30px; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
@@ -65,18 +109,16 @@
         
         <div class="input-group">
             <input type="text" id="player-name-input" placeholder="Enter Your Name">
-            <p>Then Pick your Animal!</p>
+            <p>Then Pick your Avatar!</p>
         </div>
 
         <div class="avatar-grid">
-            <div class="avatar-choice" onclick="selectAvatar('🐼')">🐼</div>
-            <div class="avatar-choice" onclick="selectAvatar('🐯')">🐯</div>
-            <div class="avatar-choice" onclick="selectAvatar('🦁')">🦁</div>
-            <div class="avatar-choice" onclick="selectAvatar('🐘')">🐘</div>
-            <div class="avatar-choice" onclick="selectAvatar('🐰')">🐰</div>
-            <div class="avatar-choice" onclick="selectAvatar('🦊')">🦊</div>
-            <div class="avatar-choice" onclick="selectAvatar('🐸')">🐸</div>
-            <div class="avatar-choice" onclick="selectAvatar('🐵')">🐵</div>
+            <div class="avatar-choice" onclick="selectAvatar('https://i.imgur.com/example-avatar1.png')"><img src="https://i.imgur.com/P1f3S9d.png" alt="Avatar 1"></div>
+            <div class="avatar-choice" onclick="selectAvatar('https://i.imgur.com/example-avatar2.png')"><img src="https://i.imgur.com/uN8a15N.png" alt="Avatar 2"></div>
+            <div class="avatar-choice" onclick="selectAvatar('https://i.imgur.com/example-avatar3.png')"><img src="https://i.imgur.com/5V16X0i.png" alt="Avatar 3"></div>
+            <div class="avatar-choice" onclick="selectAvatar('https://i.imgur.com/example-avatar4.png')"><img src="https://i.imgur.com/n14rSjS.png" alt="Avatar 4"></div>
+            <div class="avatar-choice" onclick="selectAvatar('https://i.imgur.com/example-avatar5.png')"><img src="https://i.imgur.com/mOa7Xh3.png" alt="Avatar 5"></div>
+            <div class="avatar-choice" onclick="selectAvatar('https://i.imgur.com/example-avatar6.png')"><img src="https://i.imgur.com/jM35d1f.png" alt="Avatar 6"></div>
         </div>
 
         <div class="rules-section">
@@ -141,16 +183,29 @@
     let tileBag = [], currentPlayer = 1, selectedTileIndex = null, iconMap = {}, gameActive = true, newTilesThisTurn = [];
     let boardIsFresh = true, gameState = { p1: { rack: [], bingo: [], marks: new Array(9).fill(false) }, p2: { rack: [], bingo: [], marks: new Array(9).fill(false) } };
 
-    function selectAvatar(emoji) {
+    // Function to set the image source for the avatar
+    function setAvatarImage(elementId, imageUrl) {
+        const element = document.getElementById(elementId);
+        element.innerHTML = `<img src="${imageUrl}" alt="Player Avatar">`;
+    }
+
+    function selectAvatar(imageUrl) {
         let nameInput = document.getElementById('player-name-input');
         let enteredName = nameInput.value.trim();
+
+        // Find the clicked avatar choice element to mark it as selected/disabled
+        const clickedAvatar = event.target.closest('.avatar-choice');
+
         if (!players.p1.avatar) {
-            players.p1.avatar = emoji; players.p1.name = enteredName || "Player 1";
-            nameInput.value = ""; document.getElementById('selection-title').innerText = "Player 2 Set Up";
-            event.target.style.opacity = "0.2";
+            players.p1.avatar = imageUrl;
+            players.p1.name = enteredName || "Player 1";
+            nameInput.value = "";
+            document.getElementById('selection-title').innerText = "Player 2 Set Up";
+            if (clickedAvatar) clickedAvatar.style.opacity = "0.4"; // Visually disable P1's choice
             document.getElementById('selection-screen').scrollTo(0, 0); 
         } else {
-            players.p2.avatar = emoji; players.p2.name = enteredName || "Player 2";
+            players.p2.avatar = imageUrl;
+            players.p2.name = enteredName || "Player 2";
             document.getElementById('selection-screen').style.display = 'none';
             document.getElementById('game-page').style.display = 'flex';
             init();
@@ -208,7 +263,9 @@
         const turnBox = document.getElementById('turn-box');
         turnBox.innerText = `${pData.name}'s Turn`;
         turnBox.className = `turn-box ${pKey}-active`;
-        document.getElementById('active-avatar').innerText = pData.avatar;
+        
+        // Update the current active avatar display with an image
+        setAvatarImage('active-avatar', pData.avatar);
         
         const g = document.getElementById('active-bingo'); g.innerHTML = '';
         gameState[pKey].bingo.forEach((icon, i) => {
@@ -322,6 +379,8 @@
         if(wins.some(w => w.every(i => marks[i]))) {
             gameActive = false; const p = players[`p${currentPlayer}`];
             document.getElementById('win-message').innerText = `${p.avatar} ${p.name} BINGO WINS!`;
+            // For the win message, we want to show the actual image of the avatar, not just the URL string
+            document.getElementById('win-message').innerHTML = `<img src="${p.avatar}" alt="Winner" style="width: 80px; height: 80px; vertical-align: middle; border-radius: 50%; margin-right: 15px;"> ${p.name} BINGO WINS!`;
             document.getElementById('win-overlay').style.display='flex';
         }
     }
